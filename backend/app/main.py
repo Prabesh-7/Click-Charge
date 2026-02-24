@@ -4,9 +4,9 @@ from app.models.user import create_tables
 
 app = FastAPI(title = "Click&Charge")
 
-@app.get("/aa")
+@app.get("/health-check")
 def read_root():
-    return {"Hello": "World"}
+    return {"Backend is running properly"}
 
 
 @app.on_event("startup")

@@ -1,6 +1,18 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
 from app.database import Base, engine
+from sqlalchemy import Enum
+import enum
+
+
+class UserRole(str, enum.Enum):
+    USER = "USER"
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    STAFF = "STAFF"
+
+
+
 
 
 class User(Base):
@@ -10,7 +22,13 @@ class User(Base):
     user_name = Column(String(100), nullable=False)
     email = Column(String(150), nullable=False, unique=True, index=True)
     password = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False)
+    role = Column(
+    Enum(UserRole, name="user_roles"),
+    nullable=False,
+    default=UserRole.USER
+        
+        
+    )
     phone_number = Column(String(20))
     vehicle = Column(String(100))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
