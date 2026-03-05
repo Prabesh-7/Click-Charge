@@ -1,20 +1,17 @@
 
-import './App.css'
 import { Button } from './components/ui/button'
+import Login from './features/auth/pages/Login'
+import Register from './features/auth/pages/Register'
 
-function App() {
-
-
+export default function App() {
   return (
     <>
-    <div>
-      <Button className='bg-red-500'>cLICK ME </Button>
+
+      {/* <Login/> */}
+      <Register/>
 
 
-    </div>
-
+      
     </>
   )
 }
-
-export default App

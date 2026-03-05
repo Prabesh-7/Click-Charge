@@ -2,7 +2,24 @@ from fastapi import FastAPI
 from app.database import test_db_connection
 from app.models.user import create_tables
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title = "Click&Charge")
+
+
+
+origins = [
+    "http://localhost:5173",  # React default port
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/health-check")
 def read_root():
