@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.database import test_db_connection
 from app.models.user import create_tables
+from app.routes import auth
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,6 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 
 @app.get("/health-check")
 def read_root():

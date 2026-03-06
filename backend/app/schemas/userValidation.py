@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
+
 
 
 class UserCreate(BaseModel):
@@ -17,7 +19,7 @@ class UserOut(BaseModel):
     role: str
     phone_number: Optional[str] = None
     vehicle: Optional[str] = None
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

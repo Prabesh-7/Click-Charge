@@ -5,7 +5,9 @@ psycopg2-binary
 pydantic
 python-dotenv
 passlib[bcrypt]
+pydantic[email]
 python-jose
 alembic
 httpx
 websockets
+asyncpg

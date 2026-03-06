@@ -7,6 +7,7 @@ import { type RegisterSchema, registerSchema } from "@/lib/schema/auth.schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
+import { registerUser } from "@/api/authApi";
 
 
 export default function Register() {
@@ -15,6 +16,7 @@ export default function Register() {
   const {
     register,
     handleSubmit,
+    
     formState: { errors, isSubmitting },
   } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
@@ -27,10 +29,38 @@ export default function Register() {
     },
   });
 
-  async function onSubmit(data: RegisterSchema) {
-    console.log("Form Data:", data);
-    // await registerUser(data); ← replace with your useAuth call
+//   async function onSubmit(data: RegisterSchema) {
+//     console.log("Form Data:", data);
+//     // await registerUser(data); ← replace with your useAuth call
+//   }
+
+// const onSubmit = async (data:RegisterSchema) => {
+//   try {
+//     const res = await registerUser(data);
+
+//     console.log("User registered:", res);
+
+//     alert("Registration successful!");
+
+//   } catch (error) {
+//     console.error("fai;ed");
+//     alert("Registration failed");
+//   }
+// };
+
+
+const onSubmit = async (data: RegisterSchema) => {
+  try {
+    const res = await registerUser(data);
+    console.log("User registered:", res);
+    alert("Registration successful!");
+  } catch (error: any) {
+    console.error("Registration failed:", error.response?.data || error.message);
+    alert("Registration failed");
   }
+};
+
+
 
   return (
     <main className="container mx-auto mt-20">
