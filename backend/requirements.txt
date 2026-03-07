@@ -11,3 +11,4 @@ alembic
 httpx
 websockets
 asyncpg
+argon2-cffi

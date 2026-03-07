@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { registerUser } from "@/api/authApi";
+import { Link } from "react-router-dom";
 
 
 export default function Register() {
@@ -194,9 +195,13 @@ const onSubmit = async (data: RegisterSchema) => {
           {/* ── Login link ── */}
           <div className="text-center text-[14px]">
             Already have an account?{" "}
-            <span className="text-secondary_brand cursor-pointer">
+
+            <Link to="/">
+              <span className="text-secondary_brand cursor-pointer">
               Sign in
             </span>
+            </Link>
+          
           </div>
 
         </div>

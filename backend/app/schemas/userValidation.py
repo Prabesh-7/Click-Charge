@@ -34,3 +34,7 @@ class TokenData(BaseModel):
     user_id: int
     email: str
     role: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str    

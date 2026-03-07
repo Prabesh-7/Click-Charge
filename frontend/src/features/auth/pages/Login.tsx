@@ -8,8 +8,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import {GoogleIcon} from "@/assets/icon"
+import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "@/api/authApi";
+
 
 export default function Login() {
+  const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -26,9 +30,21 @@ export default function Login() {
     },
   });
 
-  async function onSubmit(data: LoginSchema) {
-    console.log("Form Data:", data);
+const onSubmit = async (data: LoginSchema) => {
+  try {
+    const res = await loginUser(data);
+    console.log("logged in succesfully:", res);
+     navigate("/register");
+    
+    alert("login successful!");
+  } catch (error: any) {
+    console.error("login failed:", error.response?.data || error.message);
+    alert("login failed");
   }
+};
+
+
+
   return (
 
 
@@ -137,7 +153,14 @@ export default function Login() {
 
             <div className="text-center text-[14px] ">
               Dont have an account?{" "}
-              <span className="text-secondary_brand cursor-pointer">Create a account</span>
+
+              <Link to ="/register">
+                <span
+              
+              className="text-secondary_brand cursor-pointer">Create a account</span>
+              
+              </Link>
+            
             </div>
 </div>
 
