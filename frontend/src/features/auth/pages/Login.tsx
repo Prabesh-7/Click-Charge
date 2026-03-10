@@ -34,7 +34,30 @@ const onSubmit = async (data: LoginSchema) => {
   try {
     const res = await loginUser(data);
     console.log("logged in succesfully:", res);
-     navigate("/register");
+    
+  console.log("Form Data:", data); 
+
+
+
+    
+    // Store the token
+    localStorage.setItem("access_token", res.access_token);
+    // Optional: store user info
+    localStorage.setItem("user", JSON.stringify(res.user));
+
+
+    console.log(res.user.role)
+
+    // Redirect based on role
+    if (res.user.role === "ADMIN") {
+      navigate("/admin/dashboard");
+    } 
+    else if (res.user.role === "MANAGER") {
+  navigate("/manager/dashboard");
+} 
+    else {
+      navigate("/user/dashboard");
+    }
     
     alert("login successful!");
   } catch (error: any) {

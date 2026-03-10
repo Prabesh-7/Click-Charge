@@ -30,24 +30,6 @@ export default function Register() {
     },
   });
 
-//   async function onSubmit(data: RegisterSchema) {
-//     console.log("Form Data:", data);
-//     // await registerUser(data); ← replace with your useAuth call
-//   }
-
-// const onSubmit = async (data:RegisterSchema) => {
-//   try {
-//     const res = await registerUser(data);
-
-//     console.log("User registered:", res);
-
-//     alert("Registration successful!");
-
-//   } catch (error) {
-//     console.error("fai;ed");
-//     alert("Registration failed");
-//   }
-// };
 
 
 const onSubmit = async (data: RegisterSchema) => {
