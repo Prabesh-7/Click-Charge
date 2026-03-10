@@ -1,0 +1,11 @@
+import Sidebar from "@/layout/Sidebar";
+
+export default function AdminDashboard() {
+  // const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  return (
+    <main className="p-6">
+      <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+    </main>
+  );
+}
