@@ -15,6 +15,7 @@ import DashboardLayout from "@/layout/DashboardLayout";
 import ViewStations from "@/features/admin/pages/ViewStations";
 import AddCharger from "@/features/manager/pages/AddCharger";
 import AddStaff from "@/features/manager/pages/AddStaff";
+import MyChargers from "@/features/manager/pages/MyChargers";
 
 export default function AppRoutes() {
   return (
@@ -44,6 +45,7 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<ManagerDashboard />} />
         <Route path="addCharger" element={<AddCharger />} />
         <Route path="addStaff" element={<AddStaff />} />
+        <Route path="myChargers" element={<MyChargers />} />
         </Route>
       
     </Routes>

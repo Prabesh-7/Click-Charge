@@ -36,3 +36,13 @@ export const createStaff = async (data: CreateStaffSchema) => {
   return response.data;
 };
 
+export const getMyChargers = async () => {
+  const response = await api.get(
+    "/manager/my-chargers",
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
