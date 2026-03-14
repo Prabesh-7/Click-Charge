@@ -13,7 +13,7 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
 
   admin: [
     { label: "Dashboard", path: "/admin/dashboard" },
-    { label: "Add Manager", path: "/admin/addManager" },
+    { label: "Stations", path: "/admin/stations" },
     { label: "Add Stations", path: "/admin/addStation" },
   ],
 
@@ -22,7 +22,8 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
   manager: [
     
     { label: "Dashboard", path: "/manager/dashboard" },
-     { label: "Add Staff", path: "/manager/addStaff" }
+    { label: "Add Charger", path: "/manager/addCharger" },
+    { label: "Add Staff", path: "/manager/addStaff" },
   
   ],
 };

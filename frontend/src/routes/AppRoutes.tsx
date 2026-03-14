@@ -9,9 +9,12 @@ import ManagerDashboard from "@/features/manager/pages/ManagerDashboard";
 
 import FindStations from "@/features/user/pages/FindStations";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
-import AddManagers from "@/features/admin/pages/AddManagers";
+
 import AddStations from "@/features/admin/pages/AddStations";
 import DashboardLayout from "@/layout/DashboardLayout";
+import ViewStations from "@/features/admin/pages/ViewStations";
+import AddCharger from "@/features/manager/pages/AddCharger";
+import AddStaff from "@/features/manager/pages/AddStaff";
 
 export default function AppRoutes() {
   return (
@@ -30,15 +33,17 @@ export default function AppRoutes() {
        
       <Route path="/admin" element={<DashboardLayout />}>
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="addManager" element={<AddManagers />} />
+        <Route path="stations" element={<ViewStations />} />
         <Route path="addStation" element={<AddStations />} />
       </Route>
 
 
-            {/* admin */}
+            {/* manager */}
        
       <Route path="/manager" element={<DashboardLayout />}>
         <Route path="dashboard" element={<ManagerDashboard />} />
+        <Route path="addCharger" element={<AddCharger />} />
+        <Route path="addStaff" element={<AddStaff />} />
         </Route>
       
     </Routes>

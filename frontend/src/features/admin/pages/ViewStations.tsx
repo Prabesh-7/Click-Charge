@@ -1,9 +1,9 @@
 import React from 'react'
 
-export default function AddManagers() {
+export default function ViewStations() {
   return (
     <div>
-      add manager
+      Stations list
     </div>
   )
 }

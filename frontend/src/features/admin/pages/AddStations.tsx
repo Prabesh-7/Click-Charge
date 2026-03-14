@@ -50,7 +50,7 @@ export default function CreateManagerStation() {
   };
 
   return (
-    <main className="container mx-auto mt-20 max-w-lg">
+    <main className="container mx-auto mt-5 max-w-lg ">
 
       {/* ── Header ── */}
       <div className="mb-6">
@@ -224,13 +224,7 @@ export default function CreateManagerStation() {
 
       </form>
 
-      {/* ── Back link ── */}
-      <div className="text-center text-[14px] mt-4">
-        Back to{" "}
-        <Link to="/dashboard">
-          <span className="text-secondary_brand cursor-pointer">Dashboard</span>
-        </Link>
-      </div>
+   
 
     </main>
   );

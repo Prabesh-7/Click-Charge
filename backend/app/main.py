@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from app.database import test_db_connection
 from app.models.user import create_tables as create_user_tables
 from app.models.stations import create_tables as create_station_tables
+from app.models.chargers import create_tables as create_charger_tables
 
 from app.routes import auth
 from app.routes import admin_routes
+from app.routes import manager_routes
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +30,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin_routes.router)
+app.include_router(manager_routes.router)
 
 
 @app.get("/health-check")
@@ -39,5 +42,6 @@ async def on_startup():
     await test_db_connection()
     await create_user_tables()
     await create_station_tables()
+    await create_charger_tables()
     
     
