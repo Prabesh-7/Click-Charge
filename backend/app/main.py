@@ -7,6 +7,7 @@ from app.models.chargers import create_tables as create_charger_tables
 from app.routes import auth
 from app.routes import admin_routes
 from app.routes import manager_routes
+from app.routes import ocpp_routes
 
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(admin_routes.router)
 app.include_router(manager_routes.router)
+app.include_router(ocpp_routes.router)
 
 
 @app.get("/health-check")

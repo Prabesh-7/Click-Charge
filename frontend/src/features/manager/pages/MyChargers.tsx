@@ -5,9 +5,13 @@ interface Charger {
   charger_id: number;
   station_id: number;
   name: string;
+  charge_point_id: string;
   status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
   type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
-  created_at?: string;
+  max_power_kw: number;
+  current_transaction_id?: number | null;
+  created_at: string;
+  last_status_change: string;
 }
 
 export default function MyChargers() {
@@ -23,8 +27,26 @@ export default function MyChargers() {
         setChargers(data);
         setError(null);
       } catch (err: any) {
-        console.error("Failed to fetch chargers:", err.response?.data || err.message);
-        setError(err.response?.data?.detail || "Failed to load chargers. Please try again.");
+        console.error(
+          "Failed to fetch chargers:",
+          err.response?.data || err.message,
+        );
+        if (err.response?.status === 404) {
+          setChargers([]);
+          setError(null);
+          return;
+        }
+        if (Array.isArray(err.response?.data?.detail)) {
+          setError(
+            err.response.data.detail[0]?.msg ||
+              "Failed to load chargers. Please try again.",
+          );
+        } else {
+          setError(
+            err.response?.data?.detail ||
+              "Failed to load chargers. Please try again.",
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -71,7 +93,9 @@ export default function MyChargers() {
         <>
           {chargers.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">No chargers found. Add your first charger to get started.</p>
+              <p className="text-gray-500">
+                No chargers found. Add your first charger to get started.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -81,26 +105,70 @@ export default function MyChargers() {
                   className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{charger.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {charger.name}
+                    </h3>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(charger.status)}`}
                     >
                       {charger.status.replace("_", " ")}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Type:</span>
-                      <span className="text-gray-900 font-medium">{charger.type}</span>
+                      <span className="text-gray-900 font-medium">
+                        {charger.type}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Charger ID:</span>
-                      <span className="text-gray-900 font-medium">#{charger.charger_id}</span>
+                      <span className="text-gray-900 font-medium">
+                        #{charger.charger_id}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Station ID:</span>
-                      <span className="text-gray-900 font-medium">#{charger.station_id}</span>
+                      <span className="text-gray-900 font-medium">
+                        #{charger.station_id}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Charge Point ID:</span>
+                      <span className="text-gray-900 font-medium">
+                        {charger.charge_point_id}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Max Power:</span>
+                      <span className="text-gray-900 font-medium">
+                        {charger.max_power_kw} kW
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Transaction ID:</span>
+                      <span className="text-gray-900 font-medium">
+                        {charger.current_transaction_id ?? "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Created:</span>
+                      <span className="text-gray-900 font-medium">
+                        {charger.created_at
+                          ? new Date(charger.created_at).toLocaleString()
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Last Status Change:</span>
+                      <span className="text-gray-900 font-medium">
+                        {charger.last_status_change
+                          ? new Date(
+                              charger.last_status_change,
+                            ).toLocaleString()
+                          : "-"}
+                      </span>
                     </div>
                   </div>
                 </div>

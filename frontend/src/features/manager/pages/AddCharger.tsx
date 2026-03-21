@@ -2,35 +2,51 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  type CreateChargerSchema,
   createChargerSchema,
   chargerTypes,
 } from "@/lib/schema/CreateChargerSchema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addCharger } from "@/api/managerApi";
+import { z } from "zod";
+
+type CreateChargerFormValues = z.input<typeof createChargerSchema>;
+type CreateChargerSubmitValues = z.output<typeof createChargerSchema>;
 
 export default function AddCharger() {
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CreateChargerSchema>({
+  } = useForm<CreateChargerFormValues, unknown, CreateChargerSubmitValues>({
     resolver: zodResolver(createChargerSchema),
     defaultValues: {
       name: "",
+      charge_point_id: "",
       type: "CCS2",
+      max_power_kw: 50,
+      current_transaction_id: undefined,
     },
   });
 
-  const onSubmit = async (data: CreateChargerSchema) => {
+  const onSubmit = async (data: CreateChargerSubmitValues) => {
     try {
       const res = await addCharger(data);
       console.log("Charger created:", res);
       alert("Charger added successfully!");
     } catch (error: any) {
-      console.error("Failed to add charger:", error.response?.data || error.message);
-      alert("Failed to add charger. Please try again.");
+      console.error(
+        "Failed to add charger:",
+        error.response?.data || error.message,
+      );
+      const detail = error.response?.data?.detail;
+      if (typeof detail === "string") {
+        alert(detail);
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        alert(detail[0].msg);
+      } else {
+        alert("Failed to add charger. Please try again.");
+      }
     }
   };
 
@@ -46,7 +62,9 @@ export default function AddCharger() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Charger Name */}
         <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">Charger Name</FieldLabel>
+          <FieldLabel className="text-base font-medium">
+            Charger Name
+          </FieldLabel>
           <Input
             className="h-10 border border-[#B6B6B6]"
             placeholder="e.g. Charger A1"
@@ -57,9 +75,28 @@ export default function AddCharger() {
           )}
         </Field>
 
+        {/* Charge Point ID */}
+        <Field className="gap-2">
+          <FieldLabel className="text-base font-medium">
+            Charge Point ID
+          </FieldLabel>
+          <Input
+            className="h-10 border border-[#B6B6B6]"
+            placeholder="Unique ID for this charger"
+            {...register("charge_point_id")}
+          />
+          {errors.charge_point_id && (
+            <p className="text-sm text-red-500">
+              {errors.charge_point_id.message}
+            </p>
+          )}
+        </Field>
+
         {/* Charger Type */}
         <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">Charger Type</FieldLabel>
+          <FieldLabel className="text-base font-medium">
+            Charger Type
+          </FieldLabel>
           <select
             className="h-10 border border-[#B6B6B6] rounded px-2 text-sm w-full"
             {...register("type")}
@@ -73,6 +110,47 @@ export default function AddCharger() {
           </select>
           {errors.type && (
             <p className="text-sm text-red-500">{errors.type.message}</p>
+          )}
+        </Field>
+
+        {/* Max Power (kW) */}
+        <Field className="gap-2">
+          <FieldLabel className="text-base font-medium">
+            Max Power (kW)
+          </FieldLabel>
+          <Input
+            type="number"
+            className="h-10 border border-[#B6B6B6]"
+            placeholder="e.g. 50"
+            min={1}
+            {...register("max_power_kw", {
+              setValueAs: (value) => (value === "" ? undefined : Number(value)),
+            })}
+          />
+          {errors.max_power_kw && (
+            <p className="text-sm text-red-500">
+              {errors.max_power_kw.message}
+            </p>
+          )}
+        </Field>
+
+        {/* Current Transaction ID (optional) */}
+        <Field className="gap-2">
+          <FieldLabel className="text-base font-medium">
+            Current Transaction ID (optional)
+          </FieldLabel>
+          <Input
+            type="number"
+            className="h-10 border border-[#B6B6B6]"
+            placeholder="Leave empty if none"
+            {...register("current_transaction_id", {
+              setValueAs: (value) => (value === "" ? undefined : Number(value)),
+            })}
+          />
+          {errors.current_transaction_id && (
+            <p className="text-sm text-red-500">
+              {errors.current_transaction_id.message}
+            </p>
           )}
         </Field>
 

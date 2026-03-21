@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from typing import List
@@ -33,8 +33,10 @@ async def create_manager_with_station(data: ManagerWithStationCreate, db: AsyncS
     station = Station(
         station_name=data.station.station_name,
         address=data.station.address,
-        longitude=data.station.longitude,
-        latitude=data.station.latitude,
+        location=func.ST_SetSRID(
+            func.ST_MakePoint(data.station.longitude, data.station.latitude),
+            4326
+        ),
         total_charger=data.station.total_charger,
         manager_id=manager.user_id
     )
@@ -55,7 +57,18 @@ async def get_all_stations(db: AsyncSession) -> List[StationOut]:
     """
     Get all stations in the system.
     """
-    result = await db.execute(select(Station))
-    stations = result.scalars().all()
+    result = await db.execute(
+        select(
+            Station.station_id,
+            Station.station_name,
+            Station.address,
+            func.ST_X(Station.location).label("longitude"),
+            func.ST_Y(Station.location).label("latitude"),
+            Station.total_charger,
+            Station.manager_id,
+            Station.created_at,
+        )
+    )
+    stations = result.mappings().all()
 
     return [StationOut.model_validate(station) for station in stations]

@@ -23,6 +23,9 @@ class Charger(Base):
     charger_id = Column(Integer, primary_key=True, index=True)
     station_id = Column(Integer, ForeignKey("stations.station_id"), nullable=False)
     name = Column(String(150), nullable=False)
+    
+    # OCPP simulator identifier for this charger
+    charge_point_id = Column(String(50), nullable=False, unique=True)
 
     status = Column(
         Enum(ChargerStatus, name="charger_status"),
@@ -35,11 +38,13 @@ class Charger(Base):
         nullable=False
     )
 
+    max_power_kw = Column(Integer, nullable=False, default=50)  # simulator power capacity
+    current_transaction_id = Column(Integer, nullable=True)      # track simulated session
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_status_change = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 async def create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("Charger Tables created!")
-
