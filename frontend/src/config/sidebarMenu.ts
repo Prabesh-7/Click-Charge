@@ -22,6 +22,7 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
   manager: [
     
     { label: "Dashboard", path: "/manager/dashboard" },
+    { label: "Station Details", path: "/manager/stationDetails" },
     { label: "My Chargers", path: "/manager/myChargers" },
     { label: "Charger Control", path: "/manager/chargerControl" },
     { label: "Add Charger", path: "/manager/addCharger" },

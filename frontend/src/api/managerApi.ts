@@ -2,6 +2,30 @@ import api from "./axiosInstance";
 import { type CreateChargerSchema } from "@/lib/schema/CreateChargerSchema";
 import { type CreateStaffSchema } from "@/lib/schema/CreateStaffSchema";
 
+export interface ManagerCharger {
+  charger_id: number;
+  station_id: number;
+  name: string;
+  charge_point_id: string;
+  status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
+  type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
+  max_power_kw: number;
+  current_transaction_id?: number | null;
+  created_at: string;
+  last_status_change: string;
+}
+
+export interface ManagerStation {
+  station_id: number;
+  station_name: string;
+  address: string;
+  longitude: number;
+  latitude: number;
+  total_charger: number;
+  manager_id: number | null;
+  created_at: string;
+}
+
 const authHeader = () => {
   const token = localStorage.getItem("access_token");
   return {
@@ -42,6 +66,17 @@ export const createStaff = async (data: CreateStaffSchema) => {
 export const getMyChargers = async () => {
   const response = await api.get(
     "/manager/my-chargers",
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const getMyStation = async () => {
+  const response = await api.get(
+    "/manager/my-station",
     {
       headers: authHeader(),
     }

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerCreate, ChargerOut, ChargerControlResponse, ChargerMeterValues
+from app.schemas.manager_station import StationOut
 from app.schemas.userValidation import UserCreate, UserOut
 from app.services.charger_service import (
     add_charger_by_manager,
@@ -12,7 +13,7 @@ from app.services.charger_service import (
     stop_charging_by_manager,
     get_meter_values_by_manager,
 )
-from app.services.manager_service import create_staff_for_manager
+from app.services.manager_service import create_staff_for_manager, get_manager_station_details
 from app.utils.dependencies import require_manager
 from typing import List
 
@@ -38,6 +39,17 @@ async def get_my_chargers(
     Get all chargers for the manager's station.
     """
     return await get_chargers_by_manager(current_manager, db)
+
+
+@router.get("/my-station", response_model=StationOut)
+async def get_my_station(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get station details for the current manager.
+    """
+    return await get_manager_station_details(current_manager, db)
 
 
 @router.post("/chargers/{charger_id}/start", response_model=ChargerControlResponse)
