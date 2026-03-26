@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base, engine
 from sqlalchemy import Enum
@@ -31,6 +31,7 @@ class User(Base):
     )
     phone_number = Column(String(20))
     vehicle = Column(String(100))
+    station_id = Column(Integer, ForeignKey("stations.station_id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),

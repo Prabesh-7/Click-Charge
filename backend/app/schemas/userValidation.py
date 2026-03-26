@@ -19,6 +19,7 @@ class UserOut(BaseModel):
     role: str
     phone_number: Optional[str] = None
     vehicle: Optional[str] = None
+    station_id: Optional[int] = None
     created_at: datetime
 
     class Config:

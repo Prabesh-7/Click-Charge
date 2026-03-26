@@ -17,13 +17,18 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
     { label: "Add Stations", path: "/admin/addStation" },
   ],
 
-  staff: [{ label: "Dashboard", path: "/staff/dashboard" }],
+  staff: [
+    { label: "Dashboard", path: "/staff/dashboard" },
+    { label: "My Chargers", path: "/staff/myChargers" },
+    { label: "Charger Control", path: "/staff/chargerControl" },
+  ],
 
   manager: [
     
     { label: "Dashboard", path: "/manager/dashboard" },
     { label: "Station Details", path: "/manager/stationDetails" },
     { label: "My Chargers", path: "/manager/myChargers" },
+    { label: "My Staff", path: "/manager/myStaff" },
     { label: "Charger Control", path: "/manager/chargerControl" },
     { label: "Add Charger", path: "/manager/addCharger" },
     { label: "Add Staff", path: "/manager/addStaff" },

@@ -16,6 +16,10 @@ import AddStaff from "@/features/manager/pages/AddStaff";
 import MyChargers from "@/features/manager/pages/MyChargers";
 import ChargerControl from "@/features/manager/pages/ChargerControl";
 import StationDetails from "@/features/manager/pages/StationDetails";
+import StaffDashboard from "@/features/staff/pages/StaffDashboard";
+import MyStaff from "@/features/manager/pages/MyStaff";
+import StaffMyChargers from "@/features/staff/pages/MyChargers";
+import StaffChargerControl from "@/features/staff/pages/ChargerControl";
 
 export default function AppRoutes() {
   return (
@@ -44,8 +48,16 @@ export default function AppRoutes() {
         <Route path="stationDetails" element={<StationDetails />} />
         <Route path="addCharger" element={<AddCharger />} />
         <Route path="addStaff" element={<AddStaff />} />
+        <Route path="myStaff" element={<MyStaff />} />
         <Route path="myChargers" element={<MyChargers />} />
         <Route path="chargerControl" element={<ChargerControl />} />
+      </Route>
+
+      {/* staff */}
+      <Route path="/staff" element={<DashboardLayout />}>
+        <Route path="dashboard" element={<StaffDashboard />} />
+        <Route path="myChargers" element={<StaffMyChargers />} />
+        <Route path="chargerControl" element={<StaffChargerControl />} />
       </Route>
     </Routes>
   );

@@ -13,7 +13,11 @@ from app.services.charger_service import (
     stop_charging_by_manager,
     get_meter_values_by_manager,
 )
-from app.services.manager_service import create_staff_for_manager, get_manager_station_details
+from app.services.manager_service import (
+    create_staff_for_manager,
+    get_manager_station_details,
+    get_staff_by_manager_station,
+)
 from app.utils.dependencies import require_manager
 from typing import List
 
@@ -85,6 +89,15 @@ async def create_staff(
     current_manager: User = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    # current_manager is enforced as MANAGER; we don't need it further yet,
-    # but it is available if later you want to associate staff with manager/station.
-    return await create_staff_for_manager(data, db)
+    return await create_staff_for_manager(data, current_manager, db)
+
+
+@router.get("/my-staff", response_model=List[UserOut])
+async def get_my_staff(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get all staff assigned to the manager's station.
+    """
+    return await get_staff_by_manager_station(current_manager, db)

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, String
 from fastapi import HTTPException
 
 from app.models.user import User, UserRole
@@ -7,10 +7,12 @@ from app.models.stations import Station
 from app.models.chargers import Charger
 from app.schemas.manager_station import StationOut
 from app.schemas.userValidation import UserCreate, UserOut
+from typing import List
 
 
 async def create_staff_for_manager(
     data: UserCreate,
+    current_manager: User,
     db: AsyncSession,
 ):
   # check if email already exists
@@ -22,6 +24,17 @@ async def create_staff_for_manager(
   if existing_user:
       raise HTTPException(status_code=400, detail="Email already registered")
 
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
   staff = User(
       user_name=data.user_name,
       email=data.email,
@@ -29,6 +42,7 @@ async def create_staff_for_manager(
       phone_number=data.phone_number,
       vehicle=data.vehicle,
       role=UserRole.STAFF,
+      station_id=station.station_id,
   )
 
   db.add(staff)
@@ -36,6 +50,32 @@ async def create_staff_for_manager(
   await db.refresh(staff)
 
   return UserOut.model_validate(staff)
+
+
+async def get_staff_by_manager_station(
+    current_manager: User,
+    db: AsyncSession,
+) -> List[UserOut]:
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
+  staff_result = await db.execute(
+      select(User)
+      .where(cast(User.role, String) == UserRole.STAFF.value)
+      .where(User.station_id == station.station_id)
+      .order_by(User.created_at.desc())
+  )
+  staff_members = staff_result.scalars().all()
+
+  return [UserOut.model_validate(staff) for staff in staff_members]
 
 
 async def get_manager_station_details(

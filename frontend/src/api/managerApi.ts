@@ -26,6 +26,17 @@ export interface ManagerStation {
   created_at: string;
 }
 
+export interface ManagerStaff {
+  user_id: number;
+  user_name: string;
+  email: string;
+  role: string;
+  phone_number?: string | null;
+  vehicle?: string | null;
+  station_id?: number | null;
+  created_at: string;
+}
+
 const authHeader = () => {
   const token = localStorage.getItem("access_token");
   return {
@@ -77,6 +88,17 @@ export const getMyChargers = async () => {
 export const getMyStation = async () => {
   const response = await api.get(
     "/manager/my-station",
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const getMyStaff = async () => {
+  const response = await api.get(
+    "/manager/my-staff",
     {
       headers: authHeader(),
     }

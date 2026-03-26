@@ -24,8 +24,8 @@ class Station(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationship
-    manager = relationship("User")
+    # Relationship to the manager user account for this station.
+    manager = relationship("User", foreign_keys=[manager_id])
     
     
 async def create_tables():

@@ -208,3 +208,153 @@ async def get_meter_values_by_manager(
         energy_kwh=energy_kwh,
         timestamp=now,
     )
+
+
+async def get_chargers_by_staff(
+    current_staff: User,
+    db: AsyncSession,
+) -> List[ChargerOut]:
+    if not current_staff.station_id:
+        return []
+
+    result = await db.execute(
+        select(Charger).where(Charger.station_id == current_staff.station_id)
+    )
+    chargers = result.scalars().all()
+
+    return [ChargerOut.model_validate(charger) for charger in chargers]
+
+
+async def _get_staff_charger(
+    charger_id: int,
+    current_staff: User,
+    db: AsyncSession,
+) -> Charger:
+    if not current_staff.station_id:
+        raise HTTPException(status_code=404, detail="Staff is not assigned to any station")
+
+    result = await db.execute(
+        select(Charger).where(
+            Charger.charger_id == charger_id,
+            Charger.station_id == current_staff.station_id,
+        )
+    )
+    charger = result.scalar_one_or_none()
+
+    if not charger:
+        raise HTTPException(status_code=404, detail="Charger not found")
+
+    return charger
+
+
+async def start_charging_by_staff(
+    charger_id: int,
+    current_staff: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_staff_charger(charger_id, current_staff, db)
+
+    if charger.status == ChargerStatus.IN_CHARGING:
+        raise HTTPException(status_code=400, detail="Charger is already charging")
+
+    transaction_id = int(datetime.now(tz=timezone.utc).timestamp())
+
+    charger.status = ChargerStatus.IN_CHARGING
+    charger.current_transaction_id = transaction_id
+    charger.last_status_change = datetime.now(tz=timezone.utc)
+
+    await db.commit()
+    await db.refresh(charger)
+
+    return {
+        "charger": ChargerOut.model_validate(charger),
+        "message": "Charging started",
+    }
+
+
+async def stop_charging_by_staff(
+    charger_id: int,
+    current_staff: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_staff_charger(charger_id, current_staff, db)
+
+    if charger.status != ChargerStatus.IN_CHARGING:
+        raise HTTPException(status_code=400, detail="Charger is not in charging state")
+
+    charger.status = ChargerStatus.AVAILABLE
+    charger.current_transaction_id = None
+    charger.last_status_change = datetime.now(tz=timezone.utc)
+
+    await db.commit()
+    await db.refresh(charger)
+
+    return {
+        "charger": ChargerOut.model_validate(charger),
+        "message": "Charging stopped",
+    }
+
+
+async def get_meter_values_by_staff(
+    charger_id: int,
+    current_staff: User,
+    db: AsyncSession,
+) -> ChargerMeterValues:
+    charger = await _get_staff_charger(charger_id, current_staff, db)
+
+    live_values = ocpp_simulator.get_meter_values(charger.charge_point_id)
+    if live_values:
+        status_map = {
+            "Available": ChargerStatus.AVAILABLE,
+            "Charging": ChargerStatus.IN_CHARGING,
+            "Reserved": ChargerStatus.RESERVED,
+        }
+
+        live_status = status_map.get(live_values.get("status"), charger.status)
+        live_timestamp_raw = live_values.get("timestamp")
+
+        try:
+            live_timestamp = (
+                datetime.fromisoformat(live_timestamp_raw)
+                if isinstance(live_timestamp_raw, str)
+                else datetime.now(tz=timezone.utc)
+            )
+        except Exception:
+            live_timestamp = datetime.now(tz=timezone.utc)
+
+        return ChargerMeterValues(
+            charger_id=charger.charger_id,
+            charge_point_id=charger.charge_point_id,
+            status=live_status,
+            transaction_id=live_values.get("transaction_id") or charger.current_transaction_id,
+            power_kw=round(float(live_values.get("power_kw", 0.0)), 2),
+            voltage_v=round(float(live_values.get("voltage_v", 0.0)), 2),
+            current_a=round(float(live_values.get("current_a", 0.0)), 2),
+            energy_kwh=round(float(live_values.get("energy_kwh", 0.0)), 3),
+            timestamp=live_timestamp,
+        )
+
+    now = datetime.now(tz=timezone.utc)
+
+    if charger.status == ChargerStatus.IN_CHARGING and charger.last_status_change:
+        elapsed_hours = (now - charger.last_status_change).total_seconds() / 3600
+        energy_kwh = max(0.0, round(charger.max_power_kw * elapsed_hours, 3))
+        power_kw = float(charger.max_power_kw)
+    else:
+        energy_kwh = 0.0
+        power_kw = 0.0
+
+    voltage_v = 400.0 if charger.type in [ChargerType.CCS2, ChargerType.CHADEMO] else 230.0
+    current_a = round((power_kw * 1000 / voltage_v), 2) if power_kw > 0 else 0.0
+
+    return ChargerMeterValues(
+        charger_id=charger.charger_id,
+        charge_point_id=charger.charge_point_id,
+        status=charger.status,
+        transaction_id=charger.current_transaction_id,
+        power_kw=round(power_kw, 2),
+        voltage_v=voltage_v,
+        current_a=current_a,
+        energy_kwh=energy_kwh,
+        timestamp=now,
+    )
