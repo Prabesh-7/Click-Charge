@@ -114,3 +114,73 @@ async def get_manager_station_details(
 
   return StationOut.model_validate(station)
 
+
+async def _get_manager_staff(
+    user_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> User:
+  # Ensure manager can only manage staff from their own station
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
+  staff_result = await db.execute(
+      select(User).where(
+          User.user_id == user_id,
+          User.station_id == station.station_id,
+          cast(User.role, String) == UserRole.STAFF.value,
+      )
+  )
+  staff = staff_result.scalar_one_or_none()
+
+  if not staff:
+      raise HTTPException(status_code=404, detail="Staff member not found")
+
+  return staff
+
+
+async def edit_staff_for_manager(
+    user_id: int,
+    data: UserCreate,
+    current_manager: User,
+    db: AsyncSession,
+):
+  staff = await _get_manager_staff(user_id, current_manager, db)
+
+  # Update only provided fields
+  if data.user_name:
+      staff.user_name = data.user_name
+  if data.email:
+      staff.email = data.email
+  if data.password:
+      staff.password = data.password
+  if data.phone_number:
+      staff.phone_number = data.phone_number
+  if data.vehicle:
+      staff.vehicle = data.vehicle
+
+  await db.commit()
+  await db.refresh(staff)
+
+  return UserOut.model_validate(staff)
+
+
+async def delete_staff_for_manager(
+    user_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+  staff = await _get_manager_staff(user_id, current_manager, db)
+
+  await db.delete(staff)
+  await db.commit()
+
+  return {"message": "Staff member deleted successfully"}

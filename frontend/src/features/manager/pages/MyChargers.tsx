@@ -1,5 +1,19 @@
 import { useEffect, useState } from "react";
-import { getMyChargers } from "@/api/managerApi";
+import { getMyChargers, updateCharger, deleteCharger } from "@/api/managerApi";
+import { Button } from "@/components/ui/button";
+import { Edit2, Trash2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  createChargerSchema,
+  chargerTypes,
+} from "@/lib/schema/CreateChargerSchema";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { z } from "zod";
+
+type CreateChargerFormValues = z.input<typeof createChargerSchema>;
+type CreateChargerSubmitValues = z.output<typeof createChargerSchema>;
 
 interface Charger {
   charger_id: number;
@@ -18,42 +32,124 @@ export default function MyChargers() {
   const [chargers, setChargers] = useState<Charger[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingCharger, setEditingCharger] = useState<Charger | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+  } = useForm<CreateChargerFormValues, unknown, CreateChargerSubmitValues>({
+    resolver: zodResolver(createChargerSchema),
+  });
+
+  const fetchChargers = async () => {
+    try {
+      setLoading(true);
+      const data = await getMyChargers();
+      setChargers(data);
+      setError(null);
+    } catch (err: any) {
+      console.error(
+        "Failed to fetch chargers:",
+        err.response?.data || err.message,
+      );
+      if (err.response?.status === 404) {
+        setChargers([]);
+        setError(null);
+        return;
+      }
+      if (Array.isArray(err.response?.data?.detail)) {
+        setError(
+          err.response.data.detail[0]?.msg ||
+            "Failed to load chargers. Please try again.",
+        );
+      } else {
+        setError(
+          err.response?.data?.detail ||
+            "Failed to load chargers. Please try again.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchChargers = async () => {
-      try {
-        setLoading(true);
-        const data = await getMyChargers();
-        setChargers(data);
-        setError(null);
-      } catch (err: any) {
-        console.error(
-          "Failed to fetch chargers:",
-          err.response?.data || err.message,
-        );
-        if (err.response?.status === 404) {
-          setChargers([]);
-          setError(null);
-          return;
-        }
-        if (Array.isArray(err.response?.data?.detail)) {
-          setError(
-            err.response.data.detail[0]?.msg ||
-              "Failed to load chargers. Please try again.",
-          );
-        } else {
-          setError(
-            err.response?.data?.detail ||
-              "Failed to load chargers. Please try again.",
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchChargers();
   }, []);
+
+  const handleEditClick = (charger: Charger) => {
+    setEditingCharger(charger);
+    setValue("name", charger.name);
+    setValue("charge_point_id", charger.charge_point_id);
+    setValue("type", charger.type);
+    setValue("max_power_kw", charger.max_power_kw);
+    setValue(
+      "current_transaction_id",
+      charger.current_transaction_id ?? undefined,
+    );
+    setShowEditModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowEditModal(false);
+    setEditingCharger(null);
+    reset();
+  };
+
+  const onSubmit = async (data: CreateChargerSubmitValues) => {
+    if (!editingCharger) return;
+
+    try {
+      setIsSubmitting(true);
+      await updateCharger(editingCharger.charger_id, data);
+      alert("Charger updated successfully!");
+      handleCloseModal();
+      await fetchChargers();
+    } catch (error: any) {
+      console.error(
+        "Failed to update charger:",
+        error.response?.data || error.message,
+      );
+      const detail = error.response?.data?.detail;
+      if (typeof detail === "string") {
+        alert(detail);
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        alert(detail[0].msg);
+      } else {
+        alert("Failed to update charger. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (chargerId: number) => {
+    if (!confirm("Are you sure you want to delete this charger?")) {
+      return;
+    }
+
+    try {
+      await deleteCharger(chargerId);
+      alert("Charger deleted successfully!");
+      await fetchChargers();
+    } catch (error: any) {
+      console.error(
+        "Failed to delete charger:",
+        error.response?.data || error.message,
+      );
+      const detail = error.response?.data?.detail;
+      if (typeof detail === "string") {
+        alert(detail);
+      } else {
+        alert("Failed to delete charger. Please try again.");
+      }
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -171,11 +267,148 @@ export default function MyChargers() {
                       </span>
                     </div>
                   </div>
+
+                  <div className="flex gap-2 mt-6">
+                    <button
+                      onClick={() => handleEditClick(charger)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 rounded transition-colors"
+                    >
+                      <Edit2 size={16} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(charger.charger_id)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-red-200 rounded transition-colors"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </>
+      )}
+
+      {showEditModal && editingCharger && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Edit Charger
+            </h2>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <Field className="gap-2">
+                <FieldLabel className="text-base font-medium">
+                  Charger Name
+                </FieldLabel>
+                <Input
+                  className="h-10 border border-[#B6B6B6]"
+                  placeholder="e.g. Charger A1"
+                  {...register("name")}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-base font-medium">
+                  Charge Point ID
+                </FieldLabel>
+                <Input
+                  className="h-10 border border-[#B6B6B6]"
+                  placeholder="Unique ID for this charger"
+                  {...register("charge_point_id")}
+                />
+                {errors.charge_point_id && (
+                  <p className="text-sm text-red-500">
+                    {errors.charge_point_id.message}
+                  </p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-base font-medium">
+                  Charger Type
+                </FieldLabel>
+                <select
+                  className="h-10 border border-[#B6B6B6] rounded px-2 text-sm w-full"
+                  {...register("type")}
+                >
+                  <option value="">Select type</option>
+                  {chargerTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                {errors.type && (
+                  <p className="text-sm text-red-500">{errors.type.message}</p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-base font-medium">
+                  Max Power (kW)
+                </FieldLabel>
+                <Input
+                  type="number"
+                  className="h-10 border border-[#B6B6B6]"
+                  placeholder="e.g. 50"
+                  min={1}
+                  {...register("max_power_kw", {
+                    setValueAs: (value) =>
+                      value === "" ? undefined : Number(value),
+                  })}
+                />
+                {errors.max_power_kw && (
+                  <p className="text-sm text-red-500">
+                    {errors.max_power_kw.message}
+                  </p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-base font-medium">
+                  Current Transaction ID (optional)
+                </FieldLabel>
+                <Input
+                  type="number"
+                  className="h-10 border border-[#B6B6B6]"
+                  placeholder="Leave empty if none"
+                  {...register("current_transaction_id", {
+                    setValueAs: (value) =>
+                      value === "" ? undefined : Number(value),
+                  })}
+                />
+                {errors.current_transaction_id && (
+                  <p className="text-sm text-red-500">
+                    {errors.current_transaction_id.message}
+                  </p>
+                )}
+              </Field>
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 h-10 bg-gray-200 text-gray-900 hover:bg-gray-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 h-10 bg-green-400"
+                >
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </main>
   );

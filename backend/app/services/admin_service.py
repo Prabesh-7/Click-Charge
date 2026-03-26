@@ -5,7 +5,7 @@ from typing import List
 
 from app.models.user import User, UserRole
 from app.models.stations import Station
-from app.schemas.manager_station import ManagerWithStationCreate, StationOut
+from app.schemas.manager_station import ManagerWithStationCreate, StationOut, StationCreate
 
 
 
@@ -72,3 +72,73 @@ async def get_all_stations(db: AsyncSession) -> List[StationOut]:
     stations = result.mappings().all()
 
     return [StationOut.model_validate(station) for station in stations]
+
+
+async def edit_station(
+    station_id: int,
+    data: StationCreate,
+    db: AsyncSession,
+):
+    """
+    Edit station details.
+    """
+    result = await db.execute(
+        select(Station).where(Station.station_id == station_id)
+    )
+    station = result.scalar_one_or_none()
+
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+
+    # Update only provided fields
+    if data.station_name:
+        station.station_name = data.station_name
+    if data.address:
+        station.address = data.address
+    if data.longitude and data.latitude:
+        station.location = func.ST_SetSRID(
+            func.ST_MakePoint(data.longitude, data.latitude),
+            4326
+        )
+    if data.total_charger:
+        station.total_charger = data.total_charger
+
+    await db.commit()
+
+    # Query again to get updated station with correct geometry conversion
+    result = await db.execute(
+        select(
+            Station.station_id,
+            Station.station_name,
+            Station.address,
+            func.ST_X(Station.location).label("longitude"),
+            func.ST_Y(Station.location).label("latitude"),
+            Station.total_charger,
+            Station.manager_id,
+            Station.created_at,
+        ).where(Station.station_id == station_id)
+    )
+    updated_station = result.mappings().one_or_none()
+
+    return StationOut.model_validate(updated_station)
+
+
+async def delete_station(
+    station_id: int,
+    db: AsyncSession,
+) -> dict:
+    """
+    Delete a station.
+    """
+    result = await db.execute(
+        select(Station).where(Station.station_id == station_id)
+    )
+    station = result.scalar_one_or_none()
+
+    if not station:
+        raise HTTPException(status_code=404, detail="Station not found")
+
+    await db.delete(station)
+    await db.commit()
+
+    return {"message": "Station deleted successfully"}

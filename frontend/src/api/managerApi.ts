@@ -141,3 +141,55 @@ export const getChargerMeterValues = async (chargerId: number) => {
 
   return response.data;
 };
+
+export const updateCharger = async (chargerId: number, data: CreateChargerSchema) => {
+  const response = await api.put(
+    `/manager/chargers/${chargerId}`,
+    {
+      name: data.name,
+      charge_point_id: data.charge_point_id,
+      type: data.type,
+      max_power_kw: data.max_power_kw,
+      current_transaction_id: data.current_transaction_id,
+    },
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const deleteCharger = async (chargerId: number) => {
+  const response = await api.delete(
+    `/manager/chargers/${chargerId}`,
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const updateStaff = async (userId: number, data: CreateStaffSchema) => {
+  const response = await api.put(
+    `/manager/staff/${userId}`,
+    data,
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const deleteStaff = async (userId: number) => {
+  const response = await api.delete(
+    `/manager/staff/${userId}`,
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};

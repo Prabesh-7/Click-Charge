@@ -358,3 +358,44 @@ async def get_meter_values_by_staff(
         energy_kwh=energy_kwh,
         timestamp=now,
     )
+
+
+async def edit_charger_by_manager(
+    charger_id: int,
+    data: ChargerCreate,
+    current_manager: User,
+    db: AsyncSession,
+):
+    charger = await _get_manager_charger(charger_id, current_manager, db)
+
+    # Update only provided fields
+    if data.name:
+        charger.name = data.name
+    if data.type:
+        charger.type = data.type
+    if data.max_power_kw:
+        charger.max_power_kw = data.max_power_kw
+    if data.status:
+        charger.status = data.status
+    if data.charge_point_id:
+        charger.charge_point_id = data.charge_point_id
+    if data.current_transaction_id is not None:
+        charger.current_transaction_id = data.current_transaction_id
+
+    await db.commit()
+    await db.refresh(charger)
+
+    return charger
+
+
+async def delete_charger_by_manager(
+    charger_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_manager_charger(charger_id, current_manager, db)
+
+    await db.delete(charger)
+    await db.commit()
+
+    return {"message": "Charger deleted successfully"}
