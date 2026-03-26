@@ -18,23 +18,35 @@ class ChargerBase(BaseModel):
 
 
 class ChargerCreate(ChargerBase):
-    charge_point_id: Optional[str] = None
+    connector_count: Optional[int] = 1
     max_power_kw: Optional[int] = 50  # default if not provided
     current_transaction_id: Optional[int] = None  # optional
 
-    @field_validator("charge_point_id")
+    @field_validator("connector_count")
     @classmethod
-    def charge_point_id_must_not_be_empty(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.strip():
-            raise ValueError("charge_point_id cannot be empty")
+    def connector_count_must_be_valid(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("connector_count must be at least 1")
         return v
 
     @model_validator(mode="after")
     def set_defaults_for_simple_payload(self):
-        if self.charge_point_id is None:
-            clean_name = "".join(ch for ch in self.name.upper() if ch.isalnum())
-            self.charge_point_id = f"CP-{clean_name[:20] or 'CHARGER'}"
+        if self.connector_count is None:
+            self.connector_count = 1
         return self
+
+
+class ConnectorOut(BaseModel):
+    connector_id: int
+    connector_number: int
+    charge_point_id: str
+    status: ChargerStatus
+    current_transaction_id: Optional[int] = None
+    created_at: datetime
+    last_status_change: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class ChargerOut(BaseModel):
@@ -46,6 +58,7 @@ class ChargerOut(BaseModel):
     type: ChargerType
     max_power_kw: int
     current_transaction_id: Optional[int] = None
+    connectors: list[ConnectorOut] = []
     created_at: datetime
     last_status_change: datetime
 
@@ -60,11 +73,19 @@ class ChargerControlResponse(BaseModel):
 
 class ChargerMeterValues(BaseModel):
     charger_id: int
+    connector_id: Optional[int] = None
+    connector_number: Optional[int] = None
     charge_point_id: str
     status: ChargerStatus
     transaction_id: Optional[int] = None
     power_kw: float
+    reactive_power_kvar: float
     voltage_v: float
     current_a: float
+    power_factor: float
+    frequency_hz: float
     energy_kwh: float
+    reactive_energy_kvarh: float
+    temperature_c: float
+    soc_percent: float
     timestamp: datetime

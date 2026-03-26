@@ -6,6 +6,15 @@ interface Charger {
   station_id: number;
   name: string;
   charge_point_id: string;
+  connectors: {
+    connector_id: number;
+    connector_number: number;
+    charge_point_id: string;
+    status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
+    current_transaction_id?: number | null;
+    created_at: string;
+    last_status_change: string;
+  }[];
   status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
   type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
   max_power_kw: number;
@@ -122,10 +131,21 @@ export default function StaffMyChargers() {
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Charge Point ID:</span>
+                      <span className="text-gray-500">Connectors:</span>
                       <span className="text-gray-900 font-medium">
-                        {charger.charge_point_id}
+                        {charger.connectors?.length || 0}
                       </span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-gray-500">Connector CPIDs:</span>
+                      <div className="text-gray-900 mt-1">
+                        {(charger.connectors || []).map((connector) => (
+                          <div key={connector.connector_id}>
+                            C{connector.connector_number}:{" "}
+                            {connector.charge_point_id}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Max Power:</span>

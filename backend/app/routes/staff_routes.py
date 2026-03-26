@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -30,25 +30,28 @@ async def get_my_chargers(
 @router.post("/chargers/{charger_id}/start", response_model=ChargerControlResponse)
 async def start_charging(
     charger_id: int,
+    connector_id: int | None = Query(default=None),
     current_staff: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    return await start_charging_by_staff(charger_id, current_staff, db)
+    return await start_charging_by_staff(charger_id, connector_id, current_staff, db)
 
 
 @router.post("/chargers/{charger_id}/stop", response_model=ChargerControlResponse)
 async def stop_charging(
     charger_id: int,
+    connector_id: int | None = Query(default=None),
     current_staff: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    return await stop_charging_by_staff(charger_id, current_staff, db)
+    return await stop_charging_by_staff(charger_id, connector_id, current_staff, db)
 
 
 @router.get("/chargers/{charger_id}/meter-values", response_model=ChargerMeterValues)
 async def get_meter_values(
     charger_id: int,
+    connector_id: int | None = Query(default=None),
     current_staff: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_meter_values_by_staff(charger_id, current_staff, db)
+    return await get_meter_values_by_staff(charger_id, connector_id, current_staff, db)

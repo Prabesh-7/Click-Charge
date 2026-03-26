@@ -5,10 +5,11 @@ export type ChargerTypeOption = (typeof chargerTypes)[number];
 
 export const createChargerSchema = z.object({
   name: z.string().min(2, "Charger name is required"),
-  charge_point_id: z
-    .string()
-    .min(1, "Charge Point ID is required")
-    .max(50, "Charge Point ID must be at most 50 characters"),
+  connector_count: z
+    .number("Connector count must be a number")
+    .min(1, "Connector count must be at least 1")
+    .max(20, "Connector count must be at most 20")
+    .default(1),
   type: z.enum(chargerTypes).refine((val) => chargerTypes.includes(val), {
     message: "Select a charger type",
   }),

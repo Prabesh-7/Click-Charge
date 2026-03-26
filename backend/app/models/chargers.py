@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, UniqueConstraint
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.database import Base, engine
 import enum
 
@@ -42,6 +43,31 @@ class Charger(Base):
     current_transaction_id = Column(Integer, nullable=True)      # track simulated session
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_status_change = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    connectors = relationship("Connector", back_populates="charger", cascade="all, delete-orphan", lazy="selectin")
+
+
+class Connector(Base):
+    __tablename__ = "connectors"
+    __table_args__ = (
+        UniqueConstraint("charger_id", "connector_number", name="uq_connector_charger_number"),
+    )
+
+    connector_id = Column(Integer, primary_key=True, index=True)
+    charger_id = Column(Integer, ForeignKey("chargers.charger_id"), nullable=False)
+    connector_number = Column(Integer, nullable=False)
+    charge_point_id = Column(String(50), nullable=False, unique=True)
+
+    status = Column(
+        Enum(ChargerStatus, name="connector_status"),
+        nullable=False,
+        default=ChargerStatus.AVAILABLE,
+    )
+
+    current_transaction_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_status_change = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    charger = relationship("Charger", back_populates="connectors")
 
 
 async def create_tables():

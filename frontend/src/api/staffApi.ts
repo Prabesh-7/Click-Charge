@@ -15,9 +15,10 @@ export const getMyChargersByStaff = async () => {
   return response.data;
 };
 
-export const startChargingByStaff = async (chargerId: number) => {
+export const startChargingByStaff = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
   const response = await api.post(
-    `/staff/chargers/${chargerId}/start`,
+    `/staff/chargers/${chargerId}/start${query}`,
     {},
     {
       headers: authHeader(),
@@ -27,9 +28,10 @@ export const startChargingByStaff = async (chargerId: number) => {
   return response.data;
 };
 
-export const stopChargingByStaff = async (chargerId: number) => {
+export const stopChargingByStaff = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
   const response = await api.post(
-    `/staff/chargers/${chargerId}/stop`,
+    `/staff/chargers/${chargerId}/stop${query}`,
     {},
     {
       headers: authHeader(),
@@ -39,8 +41,9 @@ export const stopChargingByStaff = async (chargerId: number) => {
   return response.data;
 };
 
-export const getChargerMeterValuesByStaff = async (chargerId: number) => {
-  const response = await api.get(`/staff/chargers/${chargerId}/meter-values`, {
+export const getChargerMeterValuesByStaff = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
+  const response = await api.get(`/staff/chargers/${chargerId}/meter-values${query}`, {
     headers: authHeader(),
   });
 

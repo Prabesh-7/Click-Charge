@@ -120,16 +120,28 @@ class OCPPSimulatorService:
         meter_values = data.get("meterValue") or []
 
         power_kw = 0.0
+        reactive_power_kvar = 0.0
         voltage_v = 0.0
         current_a = 0.0
+        power_factor = 1.0
+        frequency_hz = 50.0
         energy_kwh = 0.0
+        reactive_energy_kvarh = 0.0
+        temperature_c = 0.0
+        soc_percent = 0.0
 
         if not meter_values:
             return {
                 "power_kw": power_kw,
+                "reactive_power_kvar": reactive_power_kvar,
                 "voltage_v": voltage_v,
                 "current_a": current_a,
+                "power_factor": power_factor,
+                "frequency_hz": frequency_hz,
                 "energy_kwh": energy_kwh,
+                "reactive_energy_kvarh": reactive_energy_kvarh,
+                "temperature_c": temperature_c,
+                "soc_percent": soc_percent,
             }
 
         sampled = meter_values[-1].get("sampledValue") or []
@@ -145,18 +157,36 @@ class OCPPSimulatorService:
 
             if measurand == "Power.Active.Import":
                 power_kw = round(value / 1000.0, 3)
+            elif measurand == "Power.Reactive.Import":
+                reactive_power_kvar = round(value / 1000.0, 3)
             elif measurand == "Voltage":
                 voltage_v = round(value, 3)
             elif measurand == "Current.Import":
                 current_a = round(value, 3)
+            elif measurand == "Power.Factor":
+                power_factor = round(value, 3)
+            elif measurand == "Frequency":
+                frequency_hz = round(value, 3)
             elif measurand == "Energy.Active.Import.Register":
                 energy_kwh = round(value / 1000.0, 3)
+            elif measurand == "Energy.Reactive.Import.Register":
+                reactive_energy_kvarh = round(value / 1000.0, 3)
+            elif measurand == "Temperature":
+                temperature_c = round(value, 3)
+            elif measurand in ["SoC", "SOC"]:
+                soc_percent = round(value, 3)
 
         return {
             "power_kw": power_kw,
+            "reactive_power_kvar": reactive_power_kvar,
             "voltage_v": voltage_v,
             "current_a": current_a,
+            "power_factor": power_factor,
+            "frequency_hz": frequency_hz,
             "energy_kwh": energy_kwh,
+            "reactive_energy_kvarh": reactive_energy_kvarh,
+            "temperature_c": temperature_c,
+            "soc_percent": soc_percent,
         }
 
 

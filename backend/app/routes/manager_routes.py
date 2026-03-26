@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -63,28 +63,31 @@ async def get_my_station(
 @router.post("/chargers/{charger_id}/start", response_model=ChargerControlResponse)
 async def start_charging(
     charger_id: int,
+    connector_id: int | None = Query(default=None),
     current_manager: User = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    return await start_charging_by_manager(charger_id, current_manager, db)
+    return await start_charging_by_manager(charger_id, connector_id, current_manager, db)
 
 
 @router.post("/chargers/{charger_id}/stop", response_model=ChargerControlResponse)
 async def stop_charging(
     charger_id: int,
+    connector_id: int | None = Query(default=None),
     current_manager: User = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    return await stop_charging_by_manager(charger_id, current_manager, db)
+    return await stop_charging_by_manager(charger_id, connector_id, current_manager, db)
 
 
 @router.get("/chargers/{charger_id}/meter-values", response_model=ChargerMeterValues)
 async def get_meter_values(
     charger_id: int,
+    connector_id: int | None = Query(default=None),
     current_manager: User = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_meter_values_by_manager(charger_id, current_manager, db)
+    return await get_meter_values_by_manager(charger_id, connector_id, current_manager, db)
 
 
 @router.put("/chargers/{charger_id}", response_model=ChargerOut)

@@ -7,6 +7,15 @@ export interface ManagerCharger {
   station_id: number;
   name: string;
   charge_point_id: string;
+  connectors: {
+    connector_id: number;
+    connector_number: number;
+    charge_point_id: string;
+    status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
+    current_transaction_id?: number | null;
+    created_at: string;
+    last_status_change: string;
+  }[];
   status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
   type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
   max_power_kw: number;
@@ -49,7 +58,7 @@ export const addCharger = async (data: CreateChargerSchema) => {
     "/manager/add-charger",
     {
       name: data.name,
-      charge_point_id: data.charge_point_id,
+      connector_count: data.connector_count,
       type: data.type,
       max_power_kw: data.max_power_kw,
       current_transaction_id: data.current_transaction_id,
@@ -107,9 +116,10 @@ export const getMyStaff = async () => {
   return response.data;
 };
 
-export const startCharging = async (chargerId: number) => {
+export const startCharging = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
   const response = await api.post(
-    `/manager/chargers/${chargerId}/start`,
+    `/manager/chargers/${chargerId}/start${query}`,
     {},
     {
       headers: authHeader(),
@@ -119,9 +129,10 @@ export const startCharging = async (chargerId: number) => {
   return response.data;
 };
 
-export const stopCharging = async (chargerId: number) => {
+export const stopCharging = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
   const response = await api.post(
-    `/manager/chargers/${chargerId}/stop`,
+    `/manager/chargers/${chargerId}/stop${query}`,
     {},
     {
       headers: authHeader(),
@@ -131,9 +142,10 @@ export const stopCharging = async (chargerId: number) => {
   return response.data;
 };
 
-export const getChargerMeterValues = async (chargerId: number) => {
+export const getChargerMeterValues = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
   const response = await api.get(
-    `/manager/chargers/${chargerId}/meter-values`,
+    `/manager/chargers/${chargerId}/meter-values${query}`,
     {
       headers: authHeader(),
     }
@@ -147,7 +159,6 @@ export const updateCharger = async (chargerId: number, data: CreateChargerSchema
     `/manager/chargers/${chargerId}`,
     {
       name: data.name,
-      charge_point_id: data.charge_point_id,
       type: data.type,
       max_power_kw: data.max_power_kw,
       current_transaction_id: data.current_transaction_id,

@@ -65,8 +65,14 @@ async def run_simulator(base_url: str, charge_point_id: str, duration_seconds: i
             power_kw = round(random.uniform(max_power_kw * 0.6, max_power_kw), 2)
             voltage_v = 400.0
             current_a = round((power_kw * 1000) / voltage_v, 2)
+            power_factor = round(random.uniform(0.94, 0.99), 3)
+            reactive_power_kvar = round(power_kw * 0.35, 2)
+            frequency_hz = round(random.uniform(49.9, 50.1), 2)
+            temperature_c = round(random.uniform(29.0, 42.0), 2)
+            soc_percent = min(100.0, round(20.0 + (elapsed / max(duration_seconds, 1)) * 80.0, 2))
 
             energy_wh += power_kw * (1000 / 3600)
+            reactive_energy_varh = reactive_power_kvar * (1000 / 3600)
 
             print("-> MeterValues")
             await send_call(
@@ -81,11 +87,23 @@ async def run_simulator(base_url: str, charge_point_id: str, duration_seconds: i
                             "timestamp": datetime.now(tz=timezone.utc).isoformat(),
                             "sampledValue": [
                                 {"value": str(power_kw * 1000), "measurand": "Power.Active.Import"},
+                                {
+                                    "value": str(reactive_power_kvar * 1000),
+                                    "measurand": "Power.Reactive.Import",
+                                },
                                 {"value": str(voltage_v), "measurand": "Voltage"},
                                 {"value": str(current_a), "measurand": "Current.Import"},
+                                {"value": str(power_factor), "measurand": "Power.Factor"},
+                                {"value": str(frequency_hz), "measurand": "Frequency"},
+                                {"value": str(temperature_c), "measurand": "Temperature"},
+                                {"value": str(soc_percent), "measurand": "SoC"},
                                 {
                                     "value": str(round(energy_wh, 3)),
                                     "measurand": "Energy.Active.Import.Register",
+                                },
+                                {
+                                    "value": str(round(reactive_energy_varh, 3)),
+                                    "measurand": "Energy.Reactive.Import.Register",
                                 },
                             ],
                         }

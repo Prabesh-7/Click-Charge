@@ -22,7 +22,7 @@ export default function AddCharger() {
     resolver: zodResolver(createChargerSchema),
     defaultValues: {
       name: "",
-      charge_point_id: "",
+      connector_count: 1,
       type: "CCS2",
       max_power_kw: 50,
       current_transaction_id: undefined,
@@ -75,19 +75,24 @@ export default function AddCharger() {
           )}
         </Field>
 
-        {/* Charge Point ID */}
+        {/* Connector Count */}
         <Field className="gap-2">
           <FieldLabel className="text-base font-medium">
-            Charge Point ID
+            Number of Connectors
           </FieldLabel>
           <Input
+            type="number"
             className="h-10 border border-[#B6B6B6]"
-            placeholder="Unique ID for this charger"
-            {...register("charge_point_id")}
+            placeholder="e.g. 2"
+            min={1}
+            max={20}
+            {...register("connector_count", {
+              setValueAs: (value) => (value === "" ? undefined : Number(value)),
+            })}
           />
-          {errors.charge_point_id && (
+          {errors.connector_count && (
             <p className="text-sm text-red-500">
-              {errors.charge_point_id.message}
+              {errors.connector_count.message}
             </p>
           )}
         </Field>
