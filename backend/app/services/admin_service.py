@@ -38,6 +38,15 @@ async def create_manager_with_station(data: ManagerWithStationCreate, db: AsyncS
             4326
         ),
         total_charger=data.station.total_charger,
+        station_description=data.station.station_description,
+        phone_number=data.station.phone_number,
+        has_wifi=data.station.has_wifi,
+        has_parking=data.station.has_parking,
+        has_food=data.station.has_food,
+        has_coffee=data.station.has_coffee,
+        has_bedroom=data.station.has_bedroom,
+        has_restroom=data.station.has_restroom,
+        station_images=data.station.station_images,
         manager_id=manager.user_id
     )
 
@@ -65,6 +74,15 @@ async def get_all_stations(db: AsyncSession) -> List[StationOut]:
             func.ST_X(Station.location).label("longitude"),
             func.ST_Y(Station.location).label("latitude"),
             Station.total_charger,
+            Station.station_description,
+            Station.phone_number,
+            Station.has_wifi,
+            Station.has_parking,
+            Station.has_food,
+            Station.has_coffee,
+            Station.has_bedroom,
+            Station.has_restroom,
+            Station.station_images,
             Station.manager_id,
             Station.created_at,
         )
@@ -95,13 +113,25 @@ async def edit_station(
         station.station_name = data.station_name
     if data.address:
         station.address = data.address
-    if data.longitude and data.latitude:
+    if data.longitude is not None and data.latitude is not None:
         station.location = func.ST_SetSRID(
             func.ST_MakePoint(data.longitude, data.latitude),
             4326
         )
-    if data.total_charger:
+    if data.total_charger is not None:
         station.total_charger = data.total_charger
+    if data.station_description is not None:
+        station.station_description = data.station_description
+    if data.phone_number is not None:
+        station.phone_number = data.phone_number
+
+    station.has_wifi = data.has_wifi
+    station.has_parking = data.has_parking
+    station.has_food = data.has_food
+    station.has_coffee = data.has_coffee
+    station.has_bedroom = data.has_bedroom
+    station.has_restroom = data.has_restroom
+    station.station_images = data.station_images
 
     await db.commit()
 
@@ -114,6 +144,15 @@ async def edit_station(
             func.ST_X(Station.location).label("longitude"),
             func.ST_Y(Station.location).label("latitude"),
             Station.total_charger,
+            Station.station_description,
+            Station.phone_number,
+            Station.has_wifi,
+            Station.has_parking,
+            Station.has_food,
+            Station.has_coffee,
+            Station.has_bedroom,
+            Station.has_restroom,
+            Station.station_images,
             Station.manager_id,
             Station.created_at,
         ).where(Station.station_id == station_id)

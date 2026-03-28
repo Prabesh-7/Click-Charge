@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, File, UploadFile, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerCreate, ChargerOut, ChargerControlResponse, ChargerMeterValues
-from app.schemas.manager_station import StationOut
+from app.schemas.manager_station import StationOut, ManagerStationUpdate
 from app.schemas.userValidation import UserCreate, UserOut
 from app.services.charger_service import (
     add_charger_by_manager,
@@ -21,6 +21,8 @@ from app.services.manager_service import (
     get_staff_by_manager_station,
     edit_staff_for_manager,
     delete_staff_for_manager,
+    update_manager_station_details,
+    upload_station_image_for_manager,
 )
 from app.utils.dependencies import require_manager
 from typing import List
@@ -58,6 +60,29 @@ async def get_my_station(
     Get station details for the current manager.
     """
     return await get_manager_station_details(current_manager, db)
+
+
+@router.put("/my-station", response_model=StationOut)
+async def update_my_station(
+    data: ManagerStationUpdate,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update station details for the current manager.
+    """
+    return await update_manager_station_details(data, current_manager, db)
+
+
+@router.post("/upload-image")
+async def upload_station_image(
+    request: Request,
+    file: UploadFile = File(...),
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    base_url = str(request.base_url)
+    return await upload_station_image_for_manager(file, current_manager, db, base_url)
 
 
 @router.post("/chargers/{charger_id}/start", response_model=ChargerControlResponse)

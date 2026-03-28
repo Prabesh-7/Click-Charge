@@ -31,8 +31,29 @@ export interface ManagerStation {
   longitude: number;
   latitude: number;
   total_charger: number;
+  station_description?: string | null;
+  phone_number?: string | null;
+  has_wifi: boolean;
+  has_parking: boolean;
+  has_food: boolean;
+  has_coffee: boolean;
+  has_bedroom: boolean;
+  has_restroom: boolean;
+  station_images: string[];
   manager_id: number | null;
   created_at: string;
+}
+
+export interface ManagerStationUpdate {
+  station_description?: string;
+  phone_number?: string;
+  has_wifi?: boolean;
+  has_parking?: boolean;
+  has_food?: boolean;
+  has_coffee?: boolean;
+  has_bedroom?: boolean;
+  has_restroom?: boolean;
+  station_images?: string[];
 }
 
 export interface ManagerStaff {
@@ -103,6 +124,36 @@ export const getMyStation = async () => {
   );
 
   return response.data;
+};
+
+export const updateMyStation = async (data: ManagerStationUpdate) => {
+  const response = await api.put(
+    "/manager/my-station",
+    data,
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const uploadStationImage = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await api.post(
+    "/manager/upload-image",
+    formData,
+    {
+      headers: {
+        ...authHeader(),
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data as { image_url: string };
 };
 
 export const getMyStaff = async () => {

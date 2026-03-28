@@ -14,6 +14,10 @@ from app.schemas.charger import ChargerCreate, ChargerOut, ChargerMeterValues
 from app.services.ocpp_service import ocpp_simulator
 
 
+DEFAULT_PRICE_PER_KWH = 12.0
+DEFAULT_CURRENCY = "INR"
+
+
 async def add_charger_by_manager(
     data: ChargerCreate,
     current_manager: User,
@@ -307,6 +311,24 @@ async def stop_charging_by_manager(
     if connector.status != ChargerStatus.IN_CHARGING:
         raise HTTPException(status_code=400, detail="Connector is not in charging state")
 
+    (
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        energy_kwh,
+        _,
+        _,
+        _,
+        _,
+    ) = await _get_live_or_computed_meter_values(charger, connector)
+
+    total_amount = round(energy_kwh * DEFAULT_PRICE_PER_KWH, 2)
+
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
@@ -320,7 +342,14 @@ async def stop_charging_by_manager(
 
     return {
         "charger": ChargerOut.model_validate(charger),
-        "message": f"Charging stopped on connector {connector.connector_number}",
+        "message": (
+            f"Charging stopped on connector {connector.connector_number}. "
+            f"Total amount: {DEFAULT_CURRENCY} {total_amount}"
+        ),
+        "total_energy_kwh": round(energy_kwh, 3),
+        "price_per_kwh": DEFAULT_PRICE_PER_KWH,
+        "total_amount": total_amount,
+        "currency": DEFAULT_CURRENCY,
     }
 
 async def get_meter_values_by_manager(
@@ -453,6 +482,24 @@ async def stop_charging_by_staff(
     if connector.status != ChargerStatus.IN_CHARGING:
         raise HTTPException(status_code=400, detail="Connector is not in charging state")
 
+    (
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        energy_kwh,
+        _,
+        _,
+        _,
+        _,
+    ) = await _get_live_or_computed_meter_values(charger, connector)
+
+    total_amount = round(energy_kwh * DEFAULT_PRICE_PER_KWH, 2)
+
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
@@ -466,7 +513,14 @@ async def stop_charging_by_staff(
 
     return {
         "charger": ChargerOut.model_validate(charger),
-        "message": f"Charging stopped on connector {connector.connector_number}",
+        "message": (
+            f"Charging stopped on connector {connector.connector_number}. "
+            f"Total amount: {DEFAULT_CURRENCY} {total_amount}"
+        ),
+        "total_energy_kwh": round(energy_kwh, 3),
+        "price_per_kwh": DEFAULT_PRICE_PER_KWH,
+        "total_amount": total_amount,
+        "currency": DEFAULT_CURRENCY,
     }
 
 

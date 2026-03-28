@@ -69,6 +69,10 @@ class ChargerOut(BaseModel):
 class ChargerControlResponse(BaseModel):
     charger: ChargerOut
     message: str
+    total_energy_kwh: Optional[float] = None
+    price_per_kwh: Optional[float] = None
+    total_amount: Optional[float] = None
+    currency: Optional[str] = None
 
 
 class ChargerMeterValues(BaseModel):

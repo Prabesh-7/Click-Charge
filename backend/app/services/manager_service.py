@@ -1,13 +1,21 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, cast, String
 from fastapi import HTTPException
+from fastapi import UploadFile
+import os
+import uuid
 
 from app.models.user import User, UserRole
 from app.models.stations import Station
 from app.models.chargers import Charger
-from app.schemas.manager_station import StationOut
+from app.schemas.manager_station import StationOut, ManagerStationUpdate
 from app.schemas.userValidation import UserCreate, UserOut
 from typing import List
+
+
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 async def create_staff_for_manager(
@@ -90,6 +98,15 @@ async def get_manager_station_details(
           func.ST_X(Station.location).label("longitude"),
           func.ST_Y(Station.location).label("latitude"),
           func.count(Charger.charger_id).label("total_charger"),
+          Station.station_description,
+          Station.phone_number,
+          Station.has_wifi,
+          Station.has_parking,
+          Station.has_food,
+          Station.has_coffee,
+          Station.has_bedroom,
+          Station.has_restroom,
+          Station.station_images,
           Station.manager_id,
           Station.created_at,
       )
@@ -100,6 +117,15 @@ async def get_manager_station_details(
           Station.station_name,
           Station.address,
           Station.location,
+          Station.station_description,
+          Station.phone_number,
+          Station.has_wifi,
+          Station.has_parking,
+          Station.has_food,
+          Station.has_coffee,
+          Station.has_bedroom,
+          Station.has_restroom,
+          Station.station_images,
           Station.manager_id,
           Station.created_at,
       )
@@ -113,6 +139,90 @@ async def get_manager_station_details(
       )
 
   return StationOut.model_validate(station)
+
+
+async def update_manager_station_details(
+    data: ManagerStationUpdate,
+    current_manager: User,
+    db: AsyncSession,
+) -> StationOut:
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
+  if data.station_description is not None:
+      station.station_description = data.station_description
+  if data.phone_number is not None:
+      station.phone_number = data.phone_number
+  if data.has_wifi is not None:
+      station.has_wifi = data.has_wifi
+  if data.has_parking is not None:
+      station.has_parking = data.has_parking
+  if data.has_food is not None:
+      station.has_food = data.has_food
+  if data.has_coffee is not None:
+      station.has_coffee = data.has_coffee
+  if data.has_bedroom is not None:
+      station.has_bedroom = data.has_bedroom
+  if data.has_restroom is not None:
+      station.has_restroom = data.has_restroom
+  if data.station_images is not None:
+      station.station_images = data.station_images
+
+  await db.commit()
+
+  return await get_manager_station_details(current_manager, db)
+
+
+async def upload_station_image_for_manager(
+    file: UploadFile,
+    current_manager: User,
+    db: AsyncSession,
+    base_url: str,
+) -> dict:
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
+  if not file.content_type or not file.content_type.startswith("image/"):
+      raise HTTPException(status_code=400, detail="Only image files allowed")
+
+  if "." not in file.filename:
+      raise HTTPException(status_code=400, detail="Invalid image format")
+
+  file_ext = file.filename.split(".")[-1].lower()
+  if file_ext not in ALLOWED_IMAGE_EXTENSIONS:
+      raise HTTPException(status_code=400, detail="Invalid image format")
+
+  filename = f"{uuid.uuid4()}.{file_ext}"
+  file_path = os.path.join(UPLOAD_DIR, filename)
+
+  with open(file_path, "wb") as saved_file:
+      content = await file.read()
+      saved_file.write(content)
+
+  image_url = f"{base_url}uploads/{filename}"
+
+  existing_images = station.station_images or []
+  station.station_images = [*existing_images, image_url]
+
+  await db.commit()
+
+  return {"image_url": image_url}
 
 
 async def _get_manager_staff(

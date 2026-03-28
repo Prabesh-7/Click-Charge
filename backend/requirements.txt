@@ -13,3 +13,4 @@ websockets
 asyncpg
 argon2-cffi
 geoalchemy2
+python-multipart

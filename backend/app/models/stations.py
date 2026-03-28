@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
+from sqlalchemy.dialects.postgresql import ARRAY
 from app.database import Base,engine
 
 
@@ -19,6 +20,16 @@ class Station(Base):
     )
 
     total_charger = Column(Integer, nullable=False)
+    station_description = Column(String(500), nullable=True)
+
+    phone_number = Column(String(20), nullable=True)
+    has_wifi = Column(Boolean, nullable=False, default=False)
+    has_parking = Column(Boolean, nullable=False, default=False)
+    has_food = Column(Boolean, nullable=False, default=False)
+    has_coffee = Column(Boolean, nullable=False, default=False)
+    has_bedroom = Column(Boolean, nullable=False, default=False)
+    has_restroom = Column(Boolean, nullable=False, default=False)
+    station_images = Column(ARRAY(String), nullable=False, default=list)
 
     manager_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
 
@@ -30,6 +41,19 @@ class Station(Base):
     
 async def create_tables():
     async with engine.begin() as conn:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
-            await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+        await conn.run_sync(Base.metadata.create_all)
+
+        # Sync schema for existing databases without migrations.
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS station_description VARCHAR(500)"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_wifi BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_parking BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_food BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_coffee BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_bedroom BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_restroom BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS station_images TEXT[] NOT NULL DEFAULT '{}'"))
+
+
     print(" station Tables created!")

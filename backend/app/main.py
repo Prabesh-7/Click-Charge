@@ -10,10 +10,15 @@ from app.routes import manager_routes
 from app.routes import staff_routes
 from app.routes import ocpp_routes
 
+import os
 
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title = "Click&Charge")
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 
@@ -35,6 +40,7 @@ app.include_router(admin_routes.router)
 app.include_router(manager_routes.router)
 app.include_router(staff_routes.router)
 app.include_router(ocpp_routes.router)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/health-check")

@@ -48,6 +48,14 @@ interface MeterValues {
   timestamp: string;
 }
 
+interface ChargingSummary {
+  connector_number?: number | null;
+  total_energy_kwh?: number;
+  price_per_kwh?: number;
+  total_amount?: number;
+  currency?: string;
+}
+
 export default function ChargerControl() {
   const [chargers, setChargers] = useState<Charger[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -58,6 +66,7 @@ export default function ChargerControl() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSummary, setLastSummary] = useState<ChargingSummary | null>(null);
 
   const selectedCharger =
     chargers.find((c) => c.charger_id === selectedId) || null;
@@ -197,6 +206,18 @@ export default function ChargerControl() {
         selectedConnectorId || undefined,
       );
       const updated = response.charger;
+      if (typeof response.total_amount === "number") {
+        setLastSummary({
+          connector_number: selectedConnector?.connector_number,
+          total_energy_kwh: response.total_energy_kwh,
+          price_per_kwh: response.price_per_kwh,
+          total_amount: response.total_amount,
+          currency: response.currency,
+        });
+        alert(
+          `Charging stopped. Total: ${response.currency || "INR"} ${response.total_amount} for ${response.total_energy_kwh ?? 0} kWh`,
+        );
+      }
       setChargers((prev) =>
         prev.map((item) =>
           item.charger_id === updated.charger_id ? updated : item,
@@ -275,6 +296,45 @@ export default function ChargerControl() {
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {lastSummary && (
+            <div className="bg-white border border-[#B6B6B6] rounded-lg p-5">
+              <h3 className="text-base font-semibold text-gray-900 mb-3">
+                Last Charging Bill
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Connector:</span>
+                  <span className="text-gray-900 font-medium">
+                    {lastSummary.connector_number ?? "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Energy Consumed:</span>
+                  <span className="text-gray-900 font-medium">
+                    {lastSummary.total_energy_kwh ?? 0} kWh
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Rate:</span>
+                  <span className="text-gray-900 font-medium">
+                    {(lastSummary.currency || "INR") +
+                      " " +
+                      (lastSummary.price_per_kwh ?? 0)}
+                    /kWh
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Total Amount:</span>
+                  <span className="text-gray-900 font-semibold">
+                    {(lastSummary.currency || "INR") +
+                      " " +
+                      (lastSummary.total_amount ?? 0)}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
