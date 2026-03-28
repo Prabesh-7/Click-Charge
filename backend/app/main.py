@@ -8,6 +8,7 @@ from app.routes import auth
 from app.routes import admin_routes
 from app.routes import manager_routes
 from app.routes import staff_routes
+from app.routes import user_routes
 from app.routes import ocpp_routes
 
 import os
@@ -39,6 +40,7 @@ app.include_router(auth.router)
 app.include_router(admin_routes.router)
 app.include_router(manager_routes.router)
 app.include_router(staff_routes.router)
+app.include_router(user_routes.router)
 app.include_router(ocpp_routes.router)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 

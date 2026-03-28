@@ -38,6 +38,7 @@ const emptyFormState: StationFormState = {
 export default function StationDetails() {
   const [station, setStation] = useState<ManagerStation | null>(null);
   const [chargers, setChargers] = useState<ManagerCharger[]>([]);
+  const [showDetails, setShowDetails] = useState(false);
   const [form, setForm] = useState<StationFormState>(emptyFormState);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -213,83 +214,146 @@ export default function StationDetails() {
       {!loading && !error && station && (
         <div className="space-y-4">
           <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {station.station_name}
-              </h3>
-              <p className="text-sm text-gray-600">{station.address}</p>
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {station.station_name}
+                </h3>
+                <p className="text-sm text-gray-600">{station.address}</p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => setShowDetails((prev) => !prev)}
+                className="h-10 bg-blue-600 hover:bg-blue-700"
+              >
+                {showDetails ? "Hide Details" : "Get Details"}
+              </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-              <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Phone size={16} />
-                  <span>Phone</span>
-                </div>
-                <p className="text-sm font-medium text-gray-900">
-                  {station.phone_number || "Not set"}
-                </p>
-              </div>
+            {showDetails && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                  <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                      <Phone size={16} />
+                      <span>Phone</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {station.phone_number || "Not set"}
+                    </p>
+                  </div>
 
-              <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Plug size={16} />
-                  <span>Plug Types</span>
-                </div>
-                <p className="text-sm font-medium text-gray-900">
-                  {chargerTypes.length > 0
-                    ? chargerTypes.join(", ")
-                    : "No chargers added yet"}
-                </p>
-              </div>
+                  <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                      <Plug size={16} />
+                      <span>Plug Types</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {chargerTypes.length > 0
+                        ? chargerTypes.join(", ")
+                        : "No chargers added yet"}
+                    </p>
+                  </div>
 
-              <div className="border border-gray-200 rounded-md p-3 bg-gray-50 md:col-span-2">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <FileText size={16} />
-                  <span>Description</span>
+                  <div className="border border-gray-200 rounded-md p-3 bg-gray-50 md:col-span-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                      <FileText size={16} />
+                      <span>Description</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {station.station_description ||
+                        "No station description added."}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm font-medium text-gray-900">
-                  {station.station_description ||
-                    "No station description added."}
-                </p>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Station ID:</span>
-                <span className="text-gray-900 font-medium">
-                  #{station.station_id}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Total Chargers:</span>
-                <span className="text-gray-900 font-medium">
-                  {station.total_charger}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Manager ID:</span>
-                <span className="text-gray-900 font-medium">
-                  {station.manager_id
-                    ? `#${station.manager_id}`
-                    : "Not assigned"}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Location:</span>
-                <span className="text-gray-900 font-medium text-xs flex items-center gap-1">
-                  <MapPin size={14} />
-                  {station.latitude.toFixed(4)}, {station.longitude.toFixed(4)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Created:</span>
-                <span className="text-gray-900 font-medium text-xs">
-                  {new Date(station.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Station ID:</span>
+                    <span className="text-gray-900 font-medium">
+                      #{station.station_id}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total Chargers:</span>
+                    <span className="text-gray-900 font-medium">
+                      {station.total_charger}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Manager ID:</span>
+                    <span className="text-gray-900 font-medium">
+                      {station.manager_id
+                        ? `#${station.manager_id}`
+                        : "Not assigned"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Location:</span>
+                    <span className="text-gray-900 font-medium text-xs flex items-center gap-1">
+                      <MapPin size={14} />
+                      {station.latitude.toFixed(4)},{" "}
+                      {station.longitude.toFixed(4)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Created:</span>
+                    <span className="text-gray-900 font-medium text-xs">
+                      {new Date(station.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-sm font-medium text-gray-700 mb-3">
+                    Amenities
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      WiFi: {station.has_wifi ? "Yes" : "No"}
+                    </div>
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      Parking: {station.has_parking ? "Yes" : "No"}
+                    </div>
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      Food: {station.has_food ? "Yes" : "No"}
+                    </div>
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      Coffee: {station.has_coffee ? "Yes" : "No"}
+                    </div>
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      Bedroom: {station.has_bedroom ? "Yes" : "No"}
+                    </div>
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                      Restroom: {station.has_restroom ? "Yes" : "No"}
+                    </div>
+                  </div>
+                </div>
+
+                {station.station_images.length > 0 && (
+                  <div className="mt-5">
+                    <p className="text-sm font-medium text-gray-700 mb-3">
+                      Station Images
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {station.station_images.map((imageUrl) => (
+                        <div
+                          key={imageUrl}
+                          className="border border-gray-200 rounded-md p-2"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt="Station"
+                            className="w-full h-36 object-cover rounded"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow space-y-5">

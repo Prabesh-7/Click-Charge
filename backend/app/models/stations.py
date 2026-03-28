@@ -35,7 +35,7 @@ class Station(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationship to the manager user account for this station.
+
     manager = relationship("User", foreign_keys=[manager_id])
     
     
@@ -44,16 +44,6 @@ async def create_tables():
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         await conn.run_sync(Base.metadata.create_all)
 
-        # Sync schema for existing databases without migrations.
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS station_description VARCHAR(500)"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_wifi BOOLEAN NOT NULL DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_parking BOOLEAN NOT NULL DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_food BOOLEAN NOT NULL DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_coffee BOOLEAN NOT NULL DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_bedroom BOOLEAN NOT NULL DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS has_restroom BOOLEAN NOT NULL DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE stations ADD COLUMN IF NOT EXISTS station_images TEXT[] NOT NULL DEFAULT '{}'"))
-
+       
 
     print(" station Tables created!")
