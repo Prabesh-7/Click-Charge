@@ -9,6 +9,7 @@ import {
 import { MapPin, Navigation, Phone, Plug } from "lucide-react";
 import { getUserStations, type UserStation } from "@/api/userApi";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
 type Coordinates = {
@@ -37,6 +38,7 @@ const getDistanceInKm = (from: Coordinates, to: Coordinates) => {
 };
 
 export default function FindStations() {
+  const navigate = useNavigate();
   const [stations, setStations] = useState<UserStation[]>([]);
   const [selectedStation, setSelectedStation] = useState<UserStation | null>(
     null,
@@ -49,27 +51,58 @@ export default function FindStations() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStations = async () => {
+    const fetchStations = async (isInitialLoad = false) => {
       try {
-        setLoading(true);
+        if (isInitialLoad) {
+          setLoading(true);
+        }
+
         const data = await getUserStations();
         setStations(data);
-        setSelectedStation(data[0] || null);
+
+        setSelectedStation((previousSelectedStation) => {
+          if (!previousSelectedStation) {
+            return data[0] || null;
+          }
+
+          return (
+            data.find(
+              (station) =>
+                station.station_id === previousSelectedStation.station_id,
+            ) ||
+            data[0] ||
+            null
+          );
+        });
+
+        setError(null);
       } catch (err: any) {
-        console.error(
-          "Failed to load stations:",
-          err.response?.data || err.message,
-        );
-        setError(
-          err.response?.data?.detail ||
-            "Failed to load stations. Please try again.",
-        );
+        if (isInitialLoad) {
+          console.error(
+            "Failed to load stations:",
+            err.response?.data || err.message,
+          );
+          setError(
+            err.response?.data?.detail ||
+              "Failed to load stations. Please try again.",
+          );
+        }
       } finally {
-        setLoading(false);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchStations();
+    void fetchStations(true);
+
+    const intervalId = window.setInterval(() => {
+      void fetchStations(false);
+    }, 3000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   const requestUserLocation = (): Promise<Coordinates> => {
@@ -226,12 +259,12 @@ export default function FindStations() {
                     </div>
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${
-                        station.available_chargers > 0
+                        station.available_connectors > 0
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {station.available_chargers > 0 ? "Available" : "Busy"}
+                      {station.available_connectors > 0 ? "Available" : "Busy"}
                     </span>
                   </div>
 
@@ -239,6 +272,10 @@ export default function FindStations() {
                     <p>
                       Chargers: {station.available_chargers}/
                       {station.total_chargers} available
+                    </p>
+                    <p>
+                      Connectors: {station.available_connectors}/
+                      {station.total_connectors} available
                     </p>
                     <p>
                       Plugs:{" "}
@@ -298,9 +335,13 @@ export default function FindStations() {
                     }}
                     pathOptions={{
                       color:
-                        station.available_chargers > 0 ? "#16a34a" : "#6b7280",
+                        station.available_connectors > 0
+                          ? "#16a34a"
+                          : "#6b7280",
                       fillColor:
-                        station.available_chargers > 0 ? "#22c55e" : "#9ca3af",
+                        station.available_connectors > 0
+                          ? "#22c55e"
+                          : "#9ca3af",
                       fillOpacity: 0.7,
                     }}
                   >
@@ -370,6 +411,22 @@ export default function FindStations() {
                   </div>
                 </div>
 
+                <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-sm font-medium text-gray-800 mb-2">
+                    Availability Summary
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
+                    <p>
+                      Chargers: {selectedStation.available_chargers}/
+                      {selectedStation.total_chargers} available
+                    </p>
+                    <p>
+                      Connectors: {selectedStation.available_connectors}/
+                      {selectedStation.total_connectors} available
+                    </p>
+                  </div>
+                </div>
+
                 {typeof stationDistances.get(selectedStation.station_id) ===
                   "number" && (
                   <p className="mt-3 text-sm font-medium text-blue-700">
@@ -385,6 +442,20 @@ export default function FindStations() {
                   {selectedStation.station_description ||
                     "No station description available."}
                 </p>
+
+                <div className="mt-4">
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        `/user/stations/${selectedStation.station_id}/availability`,
+                      )
+                    }
+                    className="h-10 bg-blue-600 hover:bg-blue-700"
+                  >
+                    View Charger Availability
+                  </Button>
+                </div>
 
                 {selectedStation.station_images.length > 0 && (
                   <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">

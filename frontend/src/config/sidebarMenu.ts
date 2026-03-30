@@ -9,6 +9,7 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
   user: [
     { label: "Dashboard", path: "/user/dashboard" },
     { label: "Find Stations", path: "/user/stations" },
+    { label: "Charger Availability", path: "/user/availability" },
   ],
 
   admin: [

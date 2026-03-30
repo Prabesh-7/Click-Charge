@@ -6,6 +6,7 @@ import UserDashboard from "@/features/user/pages/UserDashboard";
 import ManagerDashboard from "@/features/manager/pages/ManagerDashboard";
 
 import FindStations from "@/features/user/pages/FindStations";
+import StationAvailability from "@/features/user/pages/StationAvailability";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 
 import AddStations from "@/features/admin/pages/AddStations";
@@ -31,6 +32,11 @@ export default function AppRoutes() {
       <Route path="/user" element={<DashboardLayout />}>
         <Route path="dashboard" element={<UserDashboard />} />
         <Route path="stations" element={<FindStations />} />
+        <Route path="availability" element={<StationAvailability />} />
+        <Route
+          path="stations/:stationId/availability"
+          element={<StationAvailability />}
+        />
       </Route>
 
       {/* admin */}

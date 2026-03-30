@@ -1,5 +1,22 @@
 import api from "./axiosInstance";
 
+export interface UserStationConnector {
+  connector_id: number;
+  connector_number: number;
+  status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
+  current_transaction_id?: number | null;
+}
+
+export interface UserStationCharger {
+  charger_id: number;
+  name: string;
+  type: string;
+  status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
+  total_connectors: number;
+  available_connectors: number;
+  connectors: UserStationConnector[];
+}
+
 export interface UserStation {
   station_id: number;
   station_name: string;
@@ -17,7 +34,10 @@ export interface UserStation {
   station_images: string[];
   total_chargers: number;
   available_chargers: number;
+  total_connectors: number;
+  available_connectors: number;
   charger_types: string[];
+  chargers: UserStationCharger[];
   created_at: string;
 }
 
