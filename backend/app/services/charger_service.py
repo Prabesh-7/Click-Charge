@@ -172,7 +172,10 @@ def _sync_charger_state_from_connectors(charger: Charger, connectors: list[Conne
         return
 
     first_connector = connectors[0] if connectors else None
-    charger.status = ChargerStatus.AVAILABLE
+    if connectors and all(c.status == ChargerStatus.RESERVED for c in connectors):
+        charger.status = ChargerStatus.RESERVED
+    else:
+        charger.status = ChargerStatus.AVAILABLE
     charger.current_transaction_id = None
     if first_connector:
         charger.charge_point_id = first_connector.charge_point_id
@@ -186,6 +189,114 @@ async def _get_charger_connectors(charger: Charger, db: AsyncSession) -> list[Co
         .order_by(Connector.connector_number.asc())
     )
     return list(result.scalars().all())
+
+
+async def _reserve_connector(
+    charger: Charger,
+    db: AsyncSession,
+    connector_id: Optional[int],
+    reserved_by_user_id: int,
+) -> dict:
+    connector = await _resolve_connector_for_charger(charger, db, connector_id)
+
+    if connector.status != ChargerStatus.AVAILABLE:
+        if connector.status == ChargerStatus.RESERVED:
+            raise HTTPException(status_code=400, detail="Connector is already reserved")
+        raise HTTPException(status_code=400, detail="Connector is in charging state")
+
+    now = datetime.now(tz=timezone.utc)
+    connector.status = ChargerStatus.RESERVED
+    connector.current_transaction_id = None
+    connector.reserved_by_user_id = reserved_by_user_id
+    connector.reserved_at = now
+    connector.last_status_change = now
+
+    connectors = await _get_charger_connectors(charger, db)
+    _sync_charger_state_from_connectors(charger, connectors)
+
+    await db.commit()
+    await db.refresh(charger)
+    await db.refresh(charger, attribute_names=["connectors"])
+
+    return {
+        "charger": ChargerOut.model_validate(charger),
+        "message": f"Connector {connector.connector_number} reserved successfully",
+    }
+
+
+async def _release_reserved_connector(
+    charger: Charger,
+    db: AsyncSession,
+    connector_id: Optional[int],
+    requested_by_user_id: Optional[int] = None,
+    require_owner: bool = False,
+) -> dict:
+    connector = await _resolve_connector_for_charger(charger, db, connector_id)
+
+    if connector.status != ChargerStatus.RESERVED:
+        raise HTTPException(status_code=400, detail="Connector is not reserved")
+
+    if require_owner and connector.reserved_by_user_id != requested_by_user_id:
+        raise HTTPException(status_code=403, detail="You can only release your own reservation")
+
+    connector.status = ChargerStatus.AVAILABLE
+    connector.current_transaction_id = None
+    connector.reserved_by_user_id = None
+    connector.reserved_at = None
+    connector.last_status_change = datetime.now(tz=timezone.utc)
+
+    connectors = await _get_charger_connectors(charger, db)
+    _sync_charger_state_from_connectors(charger, connectors)
+
+    await db.commit()
+    await db.refresh(charger)
+    await db.refresh(charger, attribute_names=["connectors"])
+
+    return {
+        "charger": ChargerOut.model_validate(charger),
+        "message": f"Connector {connector.connector_number} released successfully",
+    }
+
+
+async def _get_station_reservations(
+    station_id: int,
+    db: AsyncSession,
+) -> list[dict]:
+    result = await db.execute(
+        select(
+            Charger.charger_id,
+            Charger.name.label("charger_name"),
+            Charger.type.label("charger_type"),
+            Connector.connector_id,
+            Connector.connector_number,
+            Connector.charge_point_id,
+            Connector.status,
+            Connector.reserved_at,
+            Connector.reserved_by_user_id,
+            User.user_name.label("reserved_by_user_name"),
+            User.email.label("reserved_by_email"),
+        )
+        .join(Connector, Connector.charger_id == Charger.charger_id)
+        .outerjoin(User, User.user_id == Connector.reserved_by_user_id)
+        .where(
+            Charger.station_id == station_id,
+            Connector.status == ChargerStatus.RESERVED,
+        )
+        .order_by(Connector.reserved_at.desc())
+    )
+
+    rows = result.mappings().all()
+
+    normalized_rows: list[dict] = []
+    for row in rows:
+        item = dict(row)
+        if hasattr(item.get("charger_type"), "value"):
+            item["charger_type"] = item["charger_type"].value
+        if hasattr(item.get("status"), "value"):
+            item["status"] = item["status"].value
+        normalized_rows.append(item)
+
+    return normalized_rows
 
 
 async def _get_live_or_computed_meter_values(
@@ -276,14 +387,18 @@ async def start_charging_by_manager(
     charger = await _get_manager_charger(charger_id, current_manager, db)
     connector = await _resolve_connector_for_charger(charger, db, connector_id)
 
-    if connector.status == ChargerStatus.IN_CHARGING:
-        raise HTTPException(status_code=400, detail="Connector is already charging")
+    if connector.status != ChargerStatus.AVAILABLE:
+        if connector.status == ChargerStatus.IN_CHARGING:
+            raise HTTPException(status_code=400, detail="Connector is already charging")
+        raise HTTPException(status_code=400, detail="Connector is reserved. Release the slot before starting charging")
 
     # Simple OCPP simulation transaction id.
     transaction_id = int(datetime.now(tz=timezone.utc).timestamp())
 
     connector.status = ChargerStatus.IN_CHARGING
     connector.current_transaction_id = transaction_id
+    connector.reserved_by_user_id = None
+    connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
     connectors = await _get_charger_connectors(charger, db)
@@ -297,6 +412,35 @@ async def start_charging_by_manager(
         "charger": ChargerOut.model_validate(charger),
         "message": f"Charging started on connector {connector.connector_number}",
     }
+
+
+async def reserve_connector_by_manager(
+    charger_id: int,
+    connector_id: Optional[int],
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_manager_charger(charger_id, current_manager, db)
+    return await _reserve_connector(
+        charger,
+        db,
+        connector_id,
+        reserved_by_user_id=current_manager.user_id,
+    )
+
+
+async def release_reserved_connector_by_manager(
+    charger_id: int,
+    connector_id: Optional[int],
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_manager_charger(charger_id, current_manager, db)
+    return await _release_reserved_connector(
+        charger,
+        db,
+        connector_id,
+    )
 
 
 async def stop_charging_by_manager(
@@ -331,6 +475,8 @@ async def stop_charging_by_manager(
 
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
+    connector.reserved_by_user_id = None
+    connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
     connectors = await _get_charger_connectors(charger, db)
@@ -448,13 +594,17 @@ async def start_charging_by_staff(
     charger = await _get_staff_charger(charger_id, current_staff, db)
     connector = await _resolve_connector_for_charger(charger, db, connector_id)
 
-    if connector.status == ChargerStatus.IN_CHARGING:
-        raise HTTPException(status_code=400, detail="Connector is already charging")
+    if connector.status != ChargerStatus.AVAILABLE:
+        if connector.status == ChargerStatus.IN_CHARGING:
+            raise HTTPException(status_code=400, detail="Connector is already charging")
+        raise HTTPException(status_code=400, detail="Connector is reserved")
 
     transaction_id = int(datetime.now(tz=timezone.utc).timestamp())
 
     connector.status = ChargerStatus.IN_CHARGING
     connector.current_transaction_id = transaction_id
+    connector.reserved_by_user_id = None
+    connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
     connectors = await _get_charger_connectors(charger, db)
@@ -502,6 +652,8 @@ async def stop_charging_by_staff(
 
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
+    connector.reserved_by_user_id = None
+    connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
     connectors = await _get_charger_connectors(charger, db)
@@ -568,6 +720,109 @@ async def get_meter_values_by_staff(
         soc_percent=soc_percent,
         timestamp=timestamp,
     )
+
+
+async def reserve_connector_by_staff(
+    charger_id: int,
+    connector_id: Optional[int],
+    current_staff: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_staff_charger(charger_id, current_staff, db)
+    return await _reserve_connector(
+        charger,
+        db,
+        connector_id,
+        reserved_by_user_id=current_staff.user_id,
+    )
+
+
+async def release_reserved_connector_by_staff(
+    charger_id: int,
+    connector_id: Optional[int],
+    current_staff: User,
+    db: AsyncSession,
+) -> dict:
+    charger = await _get_staff_charger(charger_id, current_staff, db)
+    return await _release_reserved_connector(
+        charger,
+        db,
+        connector_id,
+    )
+
+
+async def reserve_connector_by_user(
+    charger_id: int,
+    connector_id: Optional[int],
+    current_user: User,
+    db: AsyncSession,
+) -> dict:
+    charger_result = await db.execute(
+        select(Charger)
+        .options(selectinload(Charger.connectors))
+        .where(Charger.charger_id == charger_id)
+    )
+    charger = charger_result.scalar_one_or_none()
+
+    if not charger:
+        raise HTTPException(status_code=404, detail="Charger not found")
+
+    return await _reserve_connector(
+        charger,
+        db,
+        connector_id,
+        reserved_by_user_id=current_user.user_id,
+    )
+
+
+async def cancel_user_reservation(
+    charger_id: int,
+    connector_id: Optional[int],
+    current_user: User,
+    db: AsyncSession,
+) -> dict:
+    charger_result = await db.execute(
+        select(Charger)
+        .options(selectinload(Charger.connectors))
+        .where(Charger.charger_id == charger_id)
+    )
+    charger = charger_result.scalar_one_or_none()
+
+    if not charger:
+        raise HTTPException(status_code=404, detail="Charger not found")
+
+    return await _release_reserved_connector(
+        charger,
+        db,
+        connector_id,
+        requested_by_user_id=current_user.user_id,
+        require_owner=True,
+    )
+
+
+async def get_reservations_by_manager(
+    current_manager: User,
+    db: AsyncSession,
+) -> list[dict]:
+    station_result = await db.execute(
+        select(Station).where(Station.manager_id == current_manager.user_id)
+    )
+    station = station_result.scalar_one_or_none()
+
+    if not station:
+        return []
+
+    return await _get_station_reservations(station.station_id, db)
+
+
+async def get_reservations_by_staff(
+    current_staff: User,
+    db: AsyncSession,
+) -> list[dict]:
+    if not current_staff.station_id:
+        return []
+
+    return await _get_station_reservations(current_staff.station_id, db)
 
 
 async def edit_charger_by_manager(

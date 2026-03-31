@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plug, ArrowLeft } from "lucide-react";
-import { getUserStations, type UserStation } from "@/api/userApi";
+import { CalendarClock, ArrowLeft } from "lucide-react";
+import {
+  getUserStations,
+  getStationSlots,
+  reserveSlot,
+  cancelSlotReservation,
+  type UserStation,
+  type StationSlot,
+} from "@/api/userApi";
 import { Button } from "@/components/ui/button";
 
 export default function StationAvailability() {
@@ -9,46 +16,19 @@ export default function StationAvailability() {
   const navigate = useNavigate();
 
   const [stations, setStations] = useState<UserStation[]>([]);
+  const [slots, setSlots] = useState<StationSlot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+  const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchStations = async (isInitialLoad = false) => {
-      try {
-        if (isInitialLoad) {
-          setLoading(true);
-        }
-
-        const data = await getUserStations();
-        setStations(data);
-        setError(null);
-      } catch (err: any) {
-        if (isInitialLoad) {
-          console.error(
-            "Failed to load station availability:",
-            err.response?.data || err.message,
-          );
-          setError(
-            err.response?.data?.detail ||
-              "Failed to load station availability. Please try again.",
-          );
-        }
-      } finally {
-        if (isInitialLoad) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void fetchStations(true);
-
-    const intervalId = window.setInterval(() => {
-      void fetchStations(false);
-    }, 3000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
+  const currentUserId = useMemo(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      return typeof user.user_id === "number" ? user.user_id : null;
+    } catch {
+      return null;
+    }
   }, []);
 
   const selectedStation = useMemo(() => {
@@ -62,15 +42,117 @@ export default function StationAvailability() {
     );
   }, [stationId, stations]);
 
+  const fetchStations = async (isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) {
+        setLoading(true);
+      }
+
+      const data = await getUserStations();
+      setStations(data);
+      setError(null);
+    } catch (err: any) {
+      if (isInitialLoad) {
+        setError(
+          err.response?.data?.detail || "Failed to load station availability.",
+        );
+      }
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const fetchSlots = async (stationIdValue: number, isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) {
+        setSlotsLoading(true);
+      }
+
+      const data = await getStationSlots(stationIdValue);
+      setSlots(data);
+      setError(null);
+    } catch (err: any) {
+      if (isInitialLoad) {
+        setError(err.response?.data?.detail || "Failed to load station slots.");
+      }
+    } finally {
+      if (isInitialLoad) {
+        setSlotsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    void fetchStations(true);
+
+    const stationInterval = window.setInterval(() => {
+      void fetchStations(false);
+    }, 3000);
+
+    return () => {
+      window.clearInterval(stationInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedStation) {
+      setSlots([]);
+      setSlotsLoading(false);
+      return;
+    }
+
+    void fetchSlots(selectedStation.station_id, true);
+
+    const slotInterval = window.setInterval(() => {
+      void fetchSlots(selectedStation.station_id, false);
+    }, 3000);
+
+    return () => {
+      window.clearInterval(slotInterval);
+    };
+  }, [selectedStation?.station_id]);
+
+  const handleReserve = async (slotId: number) => {
+    try {
+      setActionLoadingKey(`reserve-${slotId}`);
+      setError(null);
+      await reserveSlot(slotId);
+      if (selectedStation) {
+        await fetchSlots(selectedStation.station_id);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Failed to reserve slot.");
+    } finally {
+      setActionLoadingKey(null);
+    }
+  };
+
+  const handleCancelReservation = async (slotId: number) => {
+    try {
+      setActionLoadingKey(`cancel-${slotId}`);
+      setError(null);
+      await cancelSlotReservation(slotId);
+      if (selectedStation) {
+        await fetchSlots(selectedStation.station_id);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Failed to cancel reservation.");
+    } finally {
+      setActionLoadingKey(null);
+    }
+  };
+
   return (
     <main className="p-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Charger Availability
+            Time Slot Availability
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Live availability updates every 3 seconds.
+            Live slot updates every 3 seconds.
           </p>
         </div>
 
@@ -86,7 +168,7 @@ export default function StationAvailability() {
 
       {loading && (
         <div className="text-center py-8">
-          <p className="text-gray-500">Loading availability...</p>
+          <p className="text-gray-500">Loading stations...</p>
         </div>
       )}
 
@@ -111,79 +193,96 @@ export default function StationAvailability() {
             <p className="text-sm text-gray-600 mt-1">
               {selectedStation.address}
             </p>
-
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                Chargers: {selectedStation.available_chargers}/
-                {selectedStation.total_chargers} available
-              </div>
-              <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                Connectors: {selectedStation.available_connectors}/
-                {selectedStation.total_connectors} available
-              </div>
-            </div>
           </div>
 
-          <div className="space-y-3">
-            {selectedStation.chargers.length === 0 && (
-              <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                No chargers available for this station.
-              </div>
+          <div className="bg-white border border-[#B6B6B6] rounded-lg p-5">
+            <h3 className="text-base font-semibold text-gray-900 mb-3">
+              Bookable Slots
+            </h3>
+
+            {slotsLoading && (
+              <p className="text-sm text-gray-500">Loading slots...</p>
             )}
 
-            {selectedStation.chargers.map((charger) => (
-              <div
-                key={charger.charger_id}
-                className="rounded-md border border-gray-200 bg-white p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {charger.name}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Type: {charger.type} | Connectors:{" "}
-                      {charger.available_connectors}/{charger.total_connectors}{" "}
-                      available
-                    </p>
-                  </div>
+            {!slotsLoading && slots.length === 0 && (
+              <p className="text-sm text-gray-500">
+                No time slots are available right now.
+              </p>
+            )}
 
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      charger.available_connectors > 0
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {charger.available_connectors > 0 ? "Available" : "Busy"}
-                  </span>
-                </div>
+            {!slotsLoading && slots.length > 0 && (
+              <div className="space-y-2">
+                {slots.map((slot) => {
+                  const isOpen = slot.status === "OPEN";
+                  const isReservedByMe =
+                    slot.status === "RESERVED" &&
+                    slot.reserved_by_user_id === currentUserId;
+                  const isReservedByOther =
+                    slot.status === "RESERVED" &&
+                    slot.reserved_by_user_id !== currentUserId;
+                  const reserveLoading =
+                    actionLoadingKey === `reserve-${slot.slot_id}`;
+                  const cancelLoading =
+                    actionLoadingKey === `cancel-${slot.slot_id}`;
 
-                {charger.connectors.length > 0 && (
-                  <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {charger.connectors.map((connector) => {
-                      const isAvailable = connector.status === "AVAILABLE";
-                      return (
-                        <div
-                          key={connector.connector_id}
-                          className={`rounded-md border px-3 py-2 text-xs ${
-                            isAvailable
-                              ? "border-green-200 bg-green-50 text-green-700"
-                              : "border-gray-200 bg-gray-50 text-gray-700"
-                          }`}
-                        >
-                          <p className="font-medium flex items-center gap-1">
-                            <Plug size={12} /> Connector{" "}
-                            {connector.connector_number}
-                          </p>
-                          <p className="mt-1">Status: {connector.status}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                  return (
+                    <div
+                      key={slot.slot_id}
+                      className="border border-gray-200 rounded px-3 py-3 flex flex-wrap items-center justify-between gap-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {slot.charger_name} - Connector{" "}
+                          {slot.connector_number}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                          <CalendarClock size={12} />
+                          {new Date(slot.start_time).toLocaleString()} to{" "}
+                          {new Date(slot.end_time).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Status: {slot.status}
+                          {isReservedByOther && slot.reserved_by_user_name
+                            ? ` | Reserved by ${slot.reserved_by_user_name}`
+                            : ""}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isReservedByMe
+                            ? void handleCancelReservation(slot.slot_id)
+                            : void handleReserve(slot.slot_id)
+                        }
+                        disabled={
+                          isReservedByOther ||
+                          slot.status === "CLOSED" ||
+                          reserveLoading ||
+                          cancelLoading ||
+                          actionLoadingKey !== null
+                        }
+                        className={`px-3 py-1 rounded text-xs font-medium disabled:opacity-50 ${
+                          isReservedByMe
+                            ? "bg-red-100 text-red-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {reserveLoading
+                          ? "Reserving..."
+                          : cancelLoading
+                            ? "Cancelling..."
+                            : isReservedByMe
+                              ? "Cancel My Reservation"
+                              : isOpen
+                                ? "Reserve Slot"
+                                : "Unavailable"}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

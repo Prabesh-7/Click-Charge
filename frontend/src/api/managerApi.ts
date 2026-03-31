@@ -13,6 +13,8 @@ export interface ManagerCharger {
     charge_point_id: string;
     status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
     current_transaction_id?: number | null;
+    reserved_by_user_id?: number | null;
+    reserved_at?: string | null;
     created_at: string;
     last_status_change: string;
   }[];
@@ -65,6 +67,52 @@ export interface ManagerStaff {
   vehicle?: string | null;
   station_id?: number | null;
   created_at: string;
+}
+
+export interface ReservationItem {
+  charger_id: number;
+  charger_name: string;
+  charger_type: string;
+  connector_id: number;
+  connector_number: number;
+  charge_point_id: string;
+  status: "RESERVED";
+  reserved_at?: string | null;
+  reserved_by_user_id?: number | null;
+  reserved_by_user_name?: string | null;
+  reserved_by_email?: string | null;
+}
+
+export interface Slot {
+  slot_id: number;
+  connector_id: number;
+  connector_number: number;
+  charger_id: number;
+  charger_name: string;
+  charger_type: string;
+  station_id: number;
+  start_time: string;
+  end_time: string;
+  status: string;
+  reserved_by_user_id: number | null;
+  reserved_by_user_name: string | null;
+  reserved_by_email: string | null;
+  reserved_at: string | null;
+  created_by_manager_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSlotPayload {
+  connector_id: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface UpdateSlotPayload {
+  start_time?: string;
+  end_time?: string;
+  status?: string;
 }
 
 const authHeader = () => {
@@ -193,6 +241,32 @@ export const stopCharging = async (chargerId: number, connectorId?: number) => {
   return response.data;
 };
 
+export const reserveConnectorSlot = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
+  const response = await api.post(
+    `/manager/chargers/${chargerId}/reserve${query}`,
+    {},
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
+export const releaseConnectorSlot = async (chargerId: number, connectorId?: number) => {
+  const query = connectorId ? `?connector_id=${connectorId}` : "";
+  const response = await api.post(
+    `/manager/chargers/${chargerId}/release${query}`,
+    {},
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data;
+};
+
 export const getChargerMeterValues = async (chargerId: number, connectorId?: number) => {
   const query = connectorId ? `?connector_id=${connectorId}` : "";
   const response = await api.get(
@@ -202,6 +276,52 @@ export const getChargerMeterValues = async (chargerId: number, connectorId?: num
     }
   );
 
+  return response.data;
+};
+
+export const getManagerReservations = async () => {
+  const response = await api.get(
+    "/manager/reservations",
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data as ReservationItem[];
+};
+
+export const getManagerSlots = async (): Promise<Slot[]> => {
+  const response = await api.get('/manager/slots', {
+    headers: authHeader(),
+  });
+  return response.data as Slot[];
+};
+
+export const createManagerSlot = async (payload: CreateSlotPayload) => {
+  const response = await api.post('/manager/slots', payload, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const updateManagerSlot = async (slotId: number, payload: UpdateSlotPayload) => {
+  const response = await api.put(`/manager/slots/${slotId}`, payload, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const deleteManagerSlot = async (slotId: number) => {
+  const response = await api.delete(`/manager/slots/${slotId}`, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const releaseManagerSlotReservation = async (slotId: number) => {
+  const response = await api.post(`/manager/slots/${slotId}/release`, {}, {
+    headers: authHeader(),
+  });
   return response.data;
 };
 

@@ -1,10 +1,11 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from typing import List
 
 from app.models.user import User, UserRole
 from app.models.stations import Station
+from app.models.chargers import Charger
 from app.schemas.manager_station import ManagerWithStationCreate, StationOut, StationCreate
 
 
@@ -167,8 +168,9 @@ async def delete_station(
     db: AsyncSession,
 ) -> dict:
     """
-    Delete a station.
+    Delete a station and all associated chargers.
     """
+    # Verify station exists
     result = await db.execute(
         select(Station).where(Station.station_id == station_id)
     )
@@ -177,7 +179,16 @@ async def delete_station(
     if not station:
         raise HTTPException(status_code=404, detail="Station not found")
 
-    await db.delete(station)
+    # Delete all chargers for this station (connectors cascade via model)
+    await db.execute(
+        delete(Charger).where(Charger.station_id == station_id)
+    )
+    
+    # Delete the station
+    await db.execute(
+        delete(Station).where(Station.station_id == station_id)
+    )
+    
     await db.commit()
 
     return {"message": "Station deleted successfully"}

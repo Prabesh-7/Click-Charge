@@ -222,6 +222,8 @@ async def get_available_stations_for_user(db: AsyncSession) -> list[UserStationO
                         connector_number=connector.connector_number,
                         status=connector_status,
                         current_transaction_id=connector.current_transaction_id,
+                        reserved_by_user_id=connector.reserved_by_user_id,
+                        reserved_at=connector.reserved_at,
                     )
                 )
 

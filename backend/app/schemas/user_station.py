@@ -8,6 +8,8 @@ class UserStationConnectorOut(BaseModel):
     connector_number: int
     status: str
     current_transaction_id: Optional[int] = None
+    reserved_by_user_id: Optional[int] = None
+    reserved_at: Optional[datetime] = None
 
 
 class UserStationChargerOut(BaseModel):

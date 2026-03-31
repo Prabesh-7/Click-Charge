@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, UniqueConstraint, text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base, engine
@@ -9,6 +9,12 @@ class ChargerStatus(str, enum.Enum):
     AVAILABLE = "AVAILABLE"
     IN_CHARGING = "IN_CHARGING"
     RESERVED = "RESERVED"
+
+
+class SlotStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    RESERVED = "RESERVED"
+    CLOSED = "CLOSED"
 
 
 class ChargerType(str, enum.Enum):
@@ -64,13 +70,41 @@ class Connector(Base):
     )
 
     current_transaction_id = Column(Integer, nullable=True)
+    reserved_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    reserved_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_status_change = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     charger = relationship("Charger", back_populates="connectors")
+    slots = relationship("ConnectorSlot", back_populates="connector", cascade="all, delete-orphan")
+
+
+class ConnectorSlot(Base):
+    __tablename__ = "connector_slots"
+
+    slot_id = Column(Integer, primary_key=True, index=True)
+    connector_id = Column(Integer, ForeignKey("connectors.connector_id"), nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=False)
+    status = Column(
+        Enum(SlotStatus, name="slot_status"),
+        nullable=False,
+        default=SlotStatus.OPEN,
+    )
+    reserved_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    reserved_at = Column(DateTime(timezone=True), nullable=True)
+    created_by_manager_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    connector = relationship("Connector", back_populates="slots")
 
 
 async def create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        # Keep schema in sync for existing databases without migrations.
+        await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_by_user_id INTEGER"))
+        await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_at TIMESTAMPTZ"))
     print("Charger Tables created!")

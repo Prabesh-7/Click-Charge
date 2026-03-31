@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerCreate, ChargerOut, ChargerControlResponse, ChargerMeterValues
+from app.schemas.reservation import ReservationOut
+from app.schemas.slot import SlotCreate, SlotOut, SlotUpdate
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
 from app.schemas.userValidation import UserCreate, UserOut
 from app.services.charger_service import (
@@ -11,6 +13,9 @@ from app.services.charger_service import (
     get_chargers_by_manager,
     start_charging_by_manager,
     stop_charging_by_manager,
+    reserve_connector_by_manager,
+    release_reserved_connector_by_manager,
+    get_reservations_by_manager,
     get_meter_values_by_manager,
     edit_charger_by_manager,
     delete_charger_by_manager,
@@ -23,6 +28,13 @@ from app.services.manager_service import (
     delete_staff_for_manager,
     update_manager_station_details,
     upload_station_image_for_manager,
+)
+from app.services.slot_service import (
+    create_slot_by_manager,
+    get_slots_by_manager,
+    update_slot_by_manager,
+    delete_slot_by_manager,
+    release_slot_reservation_by_manager,
 )
 from app.utils.dependencies import require_manager
 from typing import List
@@ -105,6 +117,26 @@ async def stop_charging(
     return await stop_charging_by_manager(charger_id, connector_id, current_manager, db)
 
 
+@router.post("/chargers/{charger_id}/reserve", response_model=ChargerControlResponse)
+async def reserve_connector(
+    charger_id: int,
+    connector_id: int | None = Query(default=None),
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await reserve_connector_by_manager(charger_id, connector_id, current_manager, db)
+
+
+@router.post("/chargers/{charger_id}/release", response_model=ChargerControlResponse)
+async def release_reserved_connector(
+    charger_id: int,
+    connector_id: int | None = Query(default=None),
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await release_reserved_connector_by_manager(charger_id, connector_id, current_manager, db)
+
+
 @router.get("/chargers/{charger_id}/meter-values", response_model=ChargerMeterValues)
 async def get_meter_values(
     charger_id: int,
@@ -113,6 +145,59 @@ async def get_meter_values(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_meter_values_by_manager(charger_id, connector_id, current_manager, db)
+
+
+@router.get("/reservations", response_model=List[ReservationOut])
+async def get_my_reservations(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_reservations_by_manager(current_manager, db)
+
+
+@router.get("/slots", response_model=List[SlotOut])
+async def get_manageable_slots(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_slots_by_manager(current_manager, db)
+
+
+@router.post("/slots")
+async def create_slot(
+    data: SlotCreate,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await create_slot_by_manager(data, current_manager, db)
+
+
+@router.put("/slots/{slot_id}")
+async def update_slot(
+    slot_id: int,
+    data: SlotUpdate,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await update_slot_by_manager(slot_id, data, current_manager, db)
+
+
+@router.delete("/slots/{slot_id}")
+async def delete_slot(
+    slot_id: int,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await delete_slot_by_manager(slot_id, current_manager, db)
+
+
+@router.post("/slots/{slot_id}/release")
+async def release_slot_reservation(
+    slot_id: int,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await release_slot_reservation_by_manager(slot_id, current_manager, db)
 
 
 @router.put("/chargers/{charger_id}", response_model=ChargerOut)

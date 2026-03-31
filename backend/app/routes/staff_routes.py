@@ -5,12 +5,18 @@ from typing import List
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerOut, ChargerControlResponse, ChargerMeterValues
+from app.schemas.reservation import ReservationOut
+from app.schemas.slot import SlotOut
 from app.services.charger_service import (
     get_chargers_by_staff,
     start_charging_by_staff,
     stop_charging_by_staff,
+    reserve_connector_by_staff,
+    release_reserved_connector_by_staff,
+    get_reservations_by_staff,
     get_meter_values_by_staff,
 )
+from app.services.slot_service import get_slots_by_staff, release_slot_reservation_by_staff
 from app.utils.dependencies import require_staff
 
 router = APIRouter(prefix="/staff", tags=["Staff"])
@@ -47,6 +53,26 @@ async def stop_charging(
     return await stop_charging_by_staff(charger_id, connector_id, current_staff, db)
 
 
+@router.post("/chargers/{charger_id}/reserve", response_model=ChargerControlResponse)
+async def reserve_connector(
+    charger_id: int,
+    connector_id: int | None = Query(default=None),
+    current_staff: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    return await reserve_connector_by_staff(charger_id, connector_id, current_staff, db)
+
+
+@router.post("/chargers/{charger_id}/release", response_model=ChargerControlResponse)
+async def release_reserved_connector(
+    charger_id: int,
+    connector_id: int | None = Query(default=None),
+    current_staff: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    return await release_reserved_connector_by_staff(charger_id, connector_id, current_staff, db)
+
+
 @router.get("/chargers/{charger_id}/meter-values", response_model=ChargerMeterValues)
 async def get_meter_values(
     charger_id: int,
@@ -55,3 +81,28 @@ async def get_meter_values(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_meter_values_by_staff(charger_id, connector_id, current_staff, db)
+
+
+@router.get("/reservations", response_model=List[ReservationOut])
+async def get_station_reservations(
+    current_staff: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_reservations_by_staff(current_staff, db)
+
+
+@router.get("/slots", response_model=List[SlotOut])
+async def get_station_slots(
+    current_staff: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_slots_by_staff(current_staff, db)
+
+
+@router.post("/slots/{slot_id}/release")
+async def release_slot_reservation(
+    slot_id: int,
+    current_staff: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    return await release_slot_reservation_by_staff(slot_id, current_staff, db)

@@ -42,6 +42,8 @@ class ConnectorOut(BaseModel):
     charge_point_id: str
     status: ChargerStatus
     current_transaction_id: Optional[int] = None
+    reserved_by_user_id: Optional[int] = None
+    reserved_at: Optional[datetime] = None
     created_at: datetime
     last_status_change: datetime
 

@@ -3,6 +3,9 @@ import {
   getMyChargersByStaff,
   startChargingByStaff,
   stopChargingByStaff,
+  reserveConnectorByStaff,
+  releaseConnectorByStaff,
+  getStaffReservations,
   getChargerMeterValuesByStaff,
 } from "@/api/staffApi";
 
@@ -56,6 +59,15 @@ interface ChargingSummary {
   currency?: string;
 }
 
+interface ReservationItem {
+  charger_id: number;
+  charger_name: string;
+  connector_id: number;
+  connector_number: number;
+  reserved_by_user_name?: string | null;
+  reserved_by_email?: string | null;
+}
+
 export default function StaffChargerControl() {
   const [chargers, setChargers] = useState<Charger[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -67,6 +79,7 @@ export default function StaffChargerControl() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSummary, setLastSummary] = useState<ChargingSummary | null>(null);
+  const [reservations, setReservations] = useState<ReservationItem[]>([]);
 
   const selectedCharger =
     chargers.find((c) => c.charger_id === selectedId) || null;
@@ -140,8 +153,21 @@ export default function StaffChargerControl() {
     }
   };
 
+  const fetchReservations = async () => {
+    try {
+      const data = await getStaffReservations();
+      setReservations(data);
+    } catch (err: any) {
+      console.error(
+        "Failed to load reservations:",
+        err.response?.data || err.message,
+      );
+    }
+  };
+
   useEffect(() => {
     fetchChargers();
+    fetchReservations();
   }, []);
 
   useEffect(() => {
@@ -154,6 +180,14 @@ export default function StaffChargerControl() {
 
     return () => clearInterval(interval);
   }, [selectedId, selectedConnectorId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchReservations();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!selectedCharger) {
@@ -186,6 +220,7 @@ export default function StaffChargerControl() {
         ),
       );
       await fetchMeterValues(selectedId);
+      await fetchReservations();
     } catch (err: any) {
       console.error(
         "Failed to start charger:",
@@ -224,12 +259,97 @@ export default function StaffChargerControl() {
         ),
       );
       await fetchMeterValues(selectedId);
+      await fetchReservations();
     } catch (err: any) {
       console.error(
         "Failed to stop charger:",
         err.response?.data || err.message,
       );
       alert(err.response?.data?.detail || "Failed to stop charger.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReserve = async () => {
+    if (!selectedId) return;
+    try {
+      setActionLoading(true);
+      const response = await reserveConnectorByStaff(
+        selectedId,
+        selectedConnectorId || undefined,
+      );
+      const updated = response.charger;
+      setChargers((prev) =>
+        prev.map((item) =>
+          item.charger_id === updated.charger_id ? updated : item,
+        ),
+      );
+      await fetchMeterValues(selectedId);
+      await fetchReservations();
+      alert(response.message || "Connector reserved successfully.");
+    } catch (err: any) {
+      console.error(
+        "Failed to reserve connector:",
+        err.response?.data || err.message,
+      );
+      alert(err.response?.data?.detail || "Failed to reserve connector.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRelease = async () => {
+    if (!selectedId) return;
+    try {
+      setActionLoading(true);
+      const response = await releaseConnectorByStaff(
+        selectedId,
+        selectedConnectorId || undefined,
+      );
+      const updated = response.charger;
+      setChargers((prev) =>
+        prev.map((item) =>
+          item.charger_id === updated.charger_id ? updated : item,
+        ),
+      );
+      await fetchMeterValues(selectedId);
+      await fetchReservations();
+      alert(response.message || "Connector released successfully.");
+    } catch (err: any) {
+      console.error(
+        "Failed to release connector:",
+        err.response?.data || err.message,
+      );
+      alert(err.response?.data?.detail || "Failed to release connector.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReleaseReservation = async (
+    chargerId: number,
+    connectorId: number,
+  ) => {
+    try {
+      setActionLoading(true);
+      const response = await releaseConnectorByStaff(chargerId, connectorId);
+      const updated = response.charger;
+      setChargers((prev) =>
+        prev.map((item) =>
+          item.charger_id === updated.charger_id ? updated : item,
+        ),
+      );
+      if (selectedId) {
+        await fetchMeterValues(selectedId);
+      }
+      await fetchReservations();
+    } catch (err: any) {
+      console.error(
+        "Failed to release reservation:",
+        err.response?.data || err.message,
+      );
+      alert(err.response?.data?.detail || "Failed to release reservation.");
     } finally {
       setActionLoading(false);
     }
@@ -383,13 +503,13 @@ export default function StaffChargerControl() {
                   type="button"
                   className="px-3 py-2 rounded bg-green-500 text-white text-sm disabled:opacity-50"
                   disabled={
-                    selectedConnector?.status === "IN_CHARGING" ||
+                    selectedConnector?.status !== "AVAILABLE" ||
                     actionLoading ||
                     !selectedConnector
                   }
                   onClick={handleStart}
                 >
-                  {actionLoading && selectedConnector?.status !== "IN_CHARGING"
+                  {actionLoading && selectedConnector?.status === "AVAILABLE"
                     ? "Starting..."
                     : "Start Charging"}
                 </button>
@@ -408,9 +528,88 @@ export default function StaffChargerControl() {
                     ? "Stopping..."
                     : "Stop Charging"}
                 </button>
+
+                <button
+                  type="button"
+                  className="px-3 py-2 rounded bg-yellow-500 text-white text-sm disabled:opacity-50"
+                  disabled={
+                    selectedConnector?.status !== "AVAILABLE" ||
+                    actionLoading ||
+                    !selectedConnector
+                  }
+                  onClick={handleReserve}
+                >
+                  {actionLoading && selectedConnector?.status === "AVAILABLE"
+                    ? "Reserving..."
+                    : "Reserve Slot"}
+                </button>
+
+                <button
+                  type="button"
+                  className="px-3 py-2 rounded bg-amber-700 text-white text-sm disabled:opacity-50"
+                  disabled={
+                    selectedConnector?.status !== "RESERVED" ||
+                    actionLoading ||
+                    !selectedConnector
+                  }
+                  onClick={handleRelease}
+                >
+                  {actionLoading && selectedConnector?.status === "RESERVED"
+                    ? "Releasing..."
+                    : "Release Slot"}
+                </button>
               </div>
             </div>
           )}
+
+          <div className="bg-white border border-[#B6B6B6] rounded-lg p-5">
+            <h3 className="text-base font-semibold text-gray-900 mb-3">
+              Active Reservations
+            </h3>
+
+            {reservations.length === 0 && (
+              <p className="text-sm text-gray-500">No active reservations.</p>
+            )}
+
+            {reservations.length > 0 && (
+              <div className="space-y-2">
+                {reservations.map((reservation) => (
+                  <div
+                    key={`${reservation.connector_id}-${reservation.charger_id}`}
+                    className="border border-gray-200 rounded px-3 py-2 text-sm flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <div>
+                      <p className="text-gray-900 font-medium">
+                        {reservation.charger_name} - Connector{" "}
+                        {reservation.connector_number}
+                      </p>
+                      <p className="text-gray-600 text-xs mt-1">
+                        Reserved by:{" "}
+                        {reservation.reserved_by_user_name || "Unknown"}
+                        {reservation.reserved_by_email
+                          ? ` (${reservation.reserved_by_email})`
+                          : ""}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded bg-amber-700 text-white text-xs disabled:opacity-50"
+                      disabled={actionLoading}
+                      onClick={() =>
+                        void handleReleaseReservation(
+                          reservation.charger_id,
+                          reservation.connector_id,
+                        )
+                      }
+                    >
+                      Release
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {meterValues && (
             <div className="bg-white border border-[#B6B6B6] rounded-lg p-5">
