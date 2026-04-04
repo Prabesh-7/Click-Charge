@@ -14,14 +14,41 @@ interface ConnectorOption {
   label: string;
 }
 
-const toLocalInputValue = (value: string) => {
+const MIN_DURATION_MINUTES = 20;
+const MAX_DURATION_MINUTES = 180;
+
+const toLocalTimeValue = (value: string) => {
   const date = new Date(value);
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60000);
-  return localDate.toISOString().slice(0, 16);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 };
 
-const toUtcIso = (value: string) => new Date(value).toISOString();
+const todayLabel = () =>
+  new Date().toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+const timeToTodayDate = (timeValue: string) => {
+  const [h, m] = timeValue.split(":").map(Number);
+  const now = new Date();
+  const local = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    h,
+    m,
+    0,
+    0,
+  );
+  return local;
+};
+
+const toUtcIsoFromTodayTime = (value: string) =>
+  timeToTodayDate(value).toISOString();
 
 export default function ManageSlots() {
   const [connectors, setConnectors] = useState<ConnectorOption[]>([]);
@@ -34,6 +61,14 @@ export default function ManageSlots() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const slotStats = useMemo(() => {
+    const open = slots.filter((slot) => slot.status === "OPEN").length;
+    const reserved = slots.filter((slot) => slot.status === "RESERVED").length;
+    const closed = slots.filter((slot) => slot.status === "CLOSED").length;
+    return { open, reserved, closed, total: slots.length };
+  }, [slots]);
 
   const sortedSlots = useMemo(
     () =>
@@ -94,22 +129,66 @@ export default function ManageSlots() {
     };
   }, []);
 
+  useEffect(() => {
+    if (startTime || endTime) return;
+
+    const now = new Date();
+    const rounded = new Date(now);
+    rounded.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
+
+    const defaultStart = new Date(rounded.getTime() + 15 * 60000);
+    const defaultEnd = new Date(defaultStart.getTime() + 60 * 60000);
+
+    const start = `${String(defaultStart.getHours()).padStart(2, "0")}:${String(defaultStart.getMinutes()).padStart(2, "0")}`;
+    const end = `${String(defaultEnd.getHours()).padStart(2, "0")}:${String(defaultEnd.getMinutes()).padStart(2, "0")}`;
+
+    setStartTime(start);
+    setEndTime(end);
+  }, [startTime, endTime]);
+
   const handleCreateSlot = async () => {
     if (!selectedConnectorId || !startTime || !endTime) {
       setError("Please select connector and provide start/end time.");
       return;
     }
 
+    const start = timeToTodayDate(startTime);
+    const end = timeToTodayDate(endTime);
+    const now = new Date();
+    const durationMinutes = Math.floor(
+      (end.getTime() - start.getTime()) / 60000,
+    );
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      setError("Please provide valid start and end time.");
+      return;
+    }
+
+    if (start <= now) {
+      setError("Start time must be in the future.");
+      return;
+    }
+
+    if (
+      durationMinutes < MIN_DURATION_MINUTES ||
+      durationMinutes > MAX_DURATION_MINUTES
+    ) {
+      setError(
+        `Slot duration must be between ${MIN_DURATION_MINUTES} and ${MAX_DURATION_MINUTES} minutes.`,
+      );
+      return;
+    }
+
     try {
       setActionLoading(true);
       setError(null);
+      setSuccess(null);
       await createManagerSlot({
         connector_id: selectedConnectorId,
-        start_time: toUtcIso(startTime),
-        end_time: toUtcIso(endTime),
+        start_time: toUtcIsoFromTodayTime(startTime),
+        end_time: toUtcIsoFromTodayTime(endTime),
       });
-      setStartTime("");
-      setEndTime("");
+      setSuccess("Slot created successfully.");
       await fetchSlots();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to create slot.");
@@ -120,24 +199,26 @@ export default function ManageSlots() {
 
   const handleEditSlot = async (slot: Slot) => {
     const newStart = window.prompt(
-      "Update start time (YYYY-MM-DDTHH:mm)",
-      toLocalInputValue(slot.start_time),
+      "Update start time (HH:mm) for today",
+      toLocalTimeValue(slot.start_time),
     );
     if (!newStart) return;
 
     const newEnd = window.prompt(
-      "Update end time (YYYY-MM-DDTHH:mm)",
-      toLocalInputValue(slot.end_time),
+      "Update end time (HH:mm) for today",
+      toLocalTimeValue(slot.end_time),
     );
     if (!newEnd) return;
 
     try {
       setActionLoading(true);
       setError(null);
+      setSuccess(null);
       await updateManagerSlot(slot.slot_id, {
-        start_time: toUtcIso(newStart),
-        end_time: toUtcIso(newEnd),
+        start_time: toUtcIsoFromTodayTime(newStart),
+        end_time: toUtcIsoFromTodayTime(newEnd),
       });
+      setSuccess("Slot updated successfully.");
       await fetchSlots();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to update slot.");
@@ -153,7 +234,9 @@ export default function ManageSlots() {
     try {
       setActionLoading(true);
       setError(null);
+      setSuccess(null);
       await deleteManagerSlot(slotId);
+      setSuccess("Slot deleted successfully.");
       await fetchSlots();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to delete slot.");
@@ -166,7 +249,9 @@ export default function ManageSlots() {
     try {
       setActionLoading(true);
       setError(null);
+      setSuccess(null);
       await releaseManagerSlotReservation(slotId);
+      setSuccess("Reservation released successfully.");
       await fetchSlots();
     } catch (err: any) {
       setError(
@@ -175,6 +260,23 @@ export default function ManageSlots() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const applyDuration = (minutes: number) => {
+    if (!startTime) {
+      setError("Select a start time first.");
+      return;
+    }
+    setError(null);
+    const start = timeToTodayDate(startTime);
+    const end = new Date(start.getTime() + minutes * 60000);
+    if (end.getDate() !== start.getDate()) {
+      setError("End time must stay within today.");
+      return;
+    }
+    const hh = String(end.getHours()).padStart(2, "0");
+    const mm = String(end.getMinutes()).padStart(2, "0");
+    setEndTime(`${hh}:${mm}`);
   };
 
   return (
@@ -193,9 +295,68 @@ export default function ManageSlots() {
         </div>
       )}
 
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded">
+          <p>{success}</p>
+        </div>
+      )}
+
+      {!loading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Total
+            </p>
+            <p className="text-xl font-semibold text-gray-900 mt-1">
+              {slotStats.total}
+            </p>
+          </div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-xs text-emerald-700 uppercase tracking-wide">
+              Open
+            </p>
+            <p className="text-xl font-semibold text-emerald-800 mt-1">
+              {slotStats.open}
+            </p>
+          </div>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-xs text-amber-700 uppercase tracking-wide">
+              Reserved
+            </p>
+            <p className="text-xl font-semibold text-amber-800 mt-1">
+              {slotStats.reserved}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs text-slate-700 uppercase tracking-wide">
+              Closed
+            </p>
+            <p className="text-xl font-semibold text-slate-800 mt-1">
+              {slotStats.closed}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
+        <p className="font-semibold mb-1">Balanced Reservation Policy</p>
+        <ul className="space-y-1 text-blue-800">
+          <li>Slots must be 20 to 180 minutes.</li>
+          <li>Reservations must be made at least 15 minutes before start.</li>
+          <li>
+            No-show reservations are auto-released after 20 minutes from slot
+            start.
+          </li>
+          <li>Users can hold up to 2 active reservations.</li>
+        </ul>
+      </div>
+
       {!loading && (
         <div className="bg-white border border-[#B6B6B6] rounded-lg p-5 space-y-3">
           <h2 className="text-lg font-semibold text-gray-900">Create Slot</h2>
+          <p className="text-xs text-gray-500">
+            Date is system-managed: {todayLabel()}
+          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -223,7 +384,7 @@ export default function ManageSlots() {
                 Start Time
               </label>
               <input
-                type="datetime-local"
+                type="time"
                 className="w-full h-10 border border-[#B6B6B6] rounded px-2 text-sm"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
@@ -235,12 +396,26 @@ export default function ManageSlots() {
                 End Time
               </label>
               <input
-                type="datetime-local"
+                type="time"
                 className="w-full h-10 border border-[#B6B6B6] rounded px-2 text-sm"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-medium text-gray-600">Quick Duration:</p>
+            {[30, 60, 90, 120].map((minutes) => (
+              <button
+                key={minutes}
+                type="button"
+                className="px-3 py-1.5 rounded border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                onClick={() => applyDuration(minutes)}
+              >
+                {minutes} min
+              </button>
+            ))}
           </div>
 
           <button
@@ -269,6 +444,16 @@ export default function ManageSlots() {
           <div className="space-y-2">
             {sortedSlots.map((slot) => {
               const isReserved = slot.status === "RESERVED";
+              const isClosed = slot.status === "CLOSED";
+              const hasStarted =
+                new Date(slot.start_time).getTime() <= Date.now();
+
+              const statusClass =
+                slot.status === "OPEN"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : slot.status === "RESERVED"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-slate-100 text-slate-700";
 
               return (
                 <div
@@ -284,9 +469,14 @@ export default function ManageSlots() {
                       {new Date(slot.end_time).toLocaleString()}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      Status: {slot.status}
+                      Status:{" "}
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusClass}`}
+                      >
+                        {slot.status}
+                      </span>
                       {slot.reserved_by_user_name
-                        ? ` | Reserved by ${slot.reserved_by_user_name}${slot.reserved_by_email ? ` (${slot.reserved_by_email})` : ""}`
+                        ? ` | Reserved by ${slot.reserved_by_user_name}${slot.reserved_by_email ? ` (${slot.reserved_by_email})` : ""}${slot.reserved_by_phone_number ? ` | Contact: ${slot.reserved_by_phone_number}` : ""}`
                         : ""}
                     </p>
                   </div>
@@ -295,7 +485,9 @@ export default function ManageSlots() {
                     <button
                       type="button"
                       className="px-3 py-1 rounded bg-gray-100 text-gray-700 text-xs disabled:opacity-50"
-                      disabled={actionLoading || isReserved}
+                      disabled={
+                        actionLoading || isReserved || isClosed || hasStarted
+                      }
                       onClick={() => void handleEditSlot(slot)}
                     >
                       Edit
@@ -304,7 +496,9 @@ export default function ManageSlots() {
                     <button
                       type="button"
                       className="px-3 py-1 rounded bg-red-100 text-red-700 text-xs disabled:opacity-50"
-                      disabled={actionLoading || isReserved}
+                      disabled={
+                        actionLoading || isReserved || isClosed || hasStarted
+                      }
                       onClick={() => void handleDeleteSlot(slot.slot_id)}
                     >
                       Delete

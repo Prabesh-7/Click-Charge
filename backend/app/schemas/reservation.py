@@ -15,3 +15,4 @@ class ReservationOut(BaseModel):
     reserved_by_user_id: Optional[int] = None
     reserved_by_user_name: Optional[str] = None
     reserved_by_email: Optional[str] = None
+    reserved_by_phone_number: Optional[str] = None

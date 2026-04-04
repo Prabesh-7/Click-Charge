@@ -3,6 +3,7 @@ from app.database import test_db_connection
 from app.models.user import create_tables as create_user_tables
 from app.models.stations import create_tables as create_station_tables
 from app.models.chargers import create_tables as create_charger_tables
+from app.models.reservation import create_tables as create_reservation_tables
 
 from app.routes import auth
 from app.routes import admin_routes
@@ -55,5 +56,6 @@ async def on_startup():
     await create_user_tables()
     await create_station_tables()
     await create_charger_tables()
+    await create_reservation_tables()
     
     

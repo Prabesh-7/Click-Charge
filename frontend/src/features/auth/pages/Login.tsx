@@ -17,7 +17,7 @@ const roleRedirectMap: Record<UserRole, string> = {
   ADMIN: "/admin/dashboard",
   MANAGER: "/manager/dashboard",
   STAFF: "/staff/dashboard",
-  USER: "/user/dashboard",
+  USER: "/user/stations",
 };
 
 function normalizeUserRole(role: unknown): UserRole {
@@ -144,7 +144,7 @@ export default function Login() {
             <hr className="flex-1 border-t border-[#B6B6B6]" />
           </div>
 
-          <Button className=" w-full h-[64px] h-14 bg-[#D7D7D7]">
+          <Button className="w-full h-16 bg-[#D7D7D7]">
             <GoogleIcon />
             Log in with google
           </Button>

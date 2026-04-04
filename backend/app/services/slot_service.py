@@ -1,12 +1,26 @@
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.stations import Station
 from app.models.chargers import Charger, Connector, ConnectorSlot, SlotStatus
+from app.models.reservation import ReservationStatus
 from app.schemas.slot import SlotCreate, SlotUpdate
+from app.services.reservation_service import (
+    close_active_slot_reservations,
+    create_slot_reservation_record,
+)
+
+
+# Practical balancing policy for walk-in users and app reservations.
+MIN_SLOT_DURATION_MINUTES = 20
+MAX_SLOT_DURATION_MINUTES = 180
+MIN_RESERVATION_LEAD_MINUTES = 15
+MAX_RESERVATION_ADVANCE_DAYS = 7
+NO_SHOW_RELEASE_MINUTES = 20
+MAX_ACTIVE_RESERVATIONS_PER_USER = 2
 
 
 def _normalize_datetime(value: datetime) -> datetime:
@@ -23,6 +37,74 @@ def _validate_slot_time_window(start_time: datetime, end_time: datetime) -> tupl
         raise HTTPException(status_code=400, detail="end_time must be greater than start_time")
 
     return start_dt, end_dt
+
+
+def _validate_slot_business_window(start_time: datetime, end_time: datetime) -> None:
+    now = datetime.now(tz=timezone.utc)
+    duration_minutes = int((end_time - start_time).total_seconds() // 60)
+
+    if start_time <= now:
+        raise HTTPException(status_code=400, detail="Slot start_time must be in the future")
+
+    if duration_minutes < MIN_SLOT_DURATION_MINUTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Slot duration must be at least {MIN_SLOT_DURATION_MINUTES} minutes",
+        )
+
+    if duration_minutes > MAX_SLOT_DURATION_MINUTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Slot duration cannot exceed {MAX_SLOT_DURATION_MINUTES} minutes",
+        )
+
+
+async def _refresh_slot_statuses(db: AsyncSession) -> None:
+    """
+    Keep slot statuses operationally realistic:
+    - Close past slots.
+    - Auto-release no-show reservations after grace from start_time.
+    """
+    now = datetime.now(tz=timezone.utc)
+    result = await db.execute(
+        select(ConnectorSlot).where(
+            ConnectorSlot.status.in_([SlotStatus.OPEN, SlotStatus.RESERVED])
+        )
+    )
+    slots = result.scalars().all()
+
+    changed = False
+    no_show_cutoff_seconds = NO_SHOW_RELEASE_MINUTES * 60
+
+    for slot in slots:
+        if slot.end_time <= now:
+            if slot.status != SlotStatus.CLOSED:
+                previous_status = slot.status
+                slot.status = SlotStatus.CLOSED
+                slot.reserved_by_user_id = None
+                slot.reserved_by_user_name = None
+                slot.reserved_by_email = None
+                slot.reserved_by_phone_number = None
+                slot.reserved_at = None
+                if previous_status == SlotStatus.RESERVED:
+                    await close_active_slot_reservations(db, slot.slot_id, ReservationStatus.COMPLETED)
+                changed = True
+            continue
+
+        if slot.status == SlotStatus.RESERVED:
+            elapsed_from_start = (now - slot.start_time).total_seconds()
+            if elapsed_from_start >= no_show_cutoff_seconds:
+                slot.status = SlotStatus.OPEN
+                slot.reserved_by_user_id = None
+                slot.reserved_by_user_name = None
+                slot.reserved_by_email = None
+                slot.reserved_by_phone_number = None
+                slot.reserved_at = None
+                await close_active_slot_reservations(db, slot.slot_id, ReservationStatus.EXPIRED)
+                changed = True
+
+    if changed:
+        await db.commit()
 
 
 async def _validate_connector_belongs_to_manager_station(
@@ -80,6 +162,7 @@ async def create_slot_by_manager(
 ) -> dict:
     connector = await _validate_connector_belongs_to_manager_station(data.connector_id, current_manager, db)
     start_dt, end_dt = _validate_slot_time_window(data.start_time, data.end_time)
+    _validate_slot_business_window(start_dt, end_dt)
 
     await _validate_slot_overlap(connector.connector_id, start_dt, end_dt, db)
 
@@ -110,8 +193,9 @@ async def _get_station_slots(station_id: int, db: AsyncSession) -> list[dict]:
             ConnectorSlot.end_time,
             ConnectorSlot.status,
             ConnectorSlot.reserved_by_user_id,
-            User.user_name.label("reserved_by_user_name"),
-            User.email.label("reserved_by_email"),
+            func.coalesce(ConnectorSlot.reserved_by_user_name, User.user_name).label("reserved_by_user_name"),
+            func.coalesce(ConnectorSlot.reserved_by_email, User.email).label("reserved_by_email"),
+            func.coalesce(ConnectorSlot.reserved_by_phone_number, User.phone_number).label("reserved_by_phone_number"),
             ConnectorSlot.reserved_at,
             ConnectorSlot.created_by_manager_id,
             ConnectorSlot.created_at,
@@ -142,6 +226,8 @@ async def get_slots_by_manager(
     current_manager: User,
     db: AsyncSession,
 ) -> list[dict]:
+    await _refresh_slot_statuses(db)
+
     station_result = await db.execute(
         select(Station).where(Station.manager_id == current_manager.user_id)
     )
@@ -157,6 +243,8 @@ async def get_slots_by_staff(
     current_staff: User,
     db: AsyncSession,
 ) -> list[dict]:
+    await _refresh_slot_statuses(db)
+
     if not current_staff.station_id:
         return []
 
@@ -167,6 +255,7 @@ async def get_slots_by_station(
     station_id: int,
     db: AsyncSession,
 ) -> list[dict]:
+    await _refresh_slot_statuses(db)
     return await _get_station_slots(station_id, db)
 
 
@@ -205,6 +294,7 @@ async def update_slot_by_manager(
         raise HTTPException(status_code=400, detail="Cannot update a reserved slot")
 
     start_dt, end_dt = _validate_slot_time_window(data.start_time, data.end_time)
+    _validate_slot_business_window(start_dt, end_dt)
     await _validate_slot_overlap(slot.connector_id, start_dt, end_dt, db, exclude_slot_id=slot.slot_id)
 
     slot.start_time = start_dt
@@ -242,7 +332,12 @@ async def release_slot_reservation_by_manager(
 
     slot.status = SlotStatus.OPEN
     slot.reserved_by_user_id = None
+    slot.reserved_by_user_name = None
+    slot.reserved_by_email = None
+    slot.reserved_by_phone_number = None
     slot.reserved_at = None
+
+    await close_active_slot_reservations(db, slot.slot_id, ReservationStatus.RELEASED)
 
     await db.commit()
 
@@ -286,7 +381,12 @@ async def release_slot_reservation_by_staff(
 
     slot.status = SlotStatus.OPEN
     slot.reserved_by_user_id = None
+    slot.reserved_by_user_name = None
+    slot.reserved_by_email = None
+    slot.reserved_by_phone_number = None
     slot.reserved_at = None
+
+    await close_active_slot_reservations(db, slot.slot_id, ReservationStatus.RELEASED)
 
     await db.commit()
 
@@ -298,6 +398,8 @@ async def reserve_slot_by_user(
     current_user: User,
     db: AsyncSession,
 ) -> dict:
+    await _refresh_slot_statuses(db)
+
     result = await db.execute(
         select(ConnectorSlot).where(ConnectorSlot.slot_id == slot_id)
     )
@@ -310,12 +412,46 @@ async def reserve_slot_by_user(
         raise HTTPException(status_code=400, detail="Slot is not available")
 
     now = datetime.now(tz=timezone.utc)
+    lead_cutoff = now.timestamp() + (MIN_RESERVATION_LEAD_MINUTES * 60)
+
+    if slot.start_time.timestamp() < lead_cutoff:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Reservation must be made at least {MIN_RESERVATION_LEAD_MINUTES} minutes before slot start",
+        )
+
+    max_advance_cutoff = now.timestamp() + (MAX_RESERVATION_ADVANCE_DAYS * 24 * 60 * 60)
+    if slot.start_time.timestamp() > max_advance_cutoff:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Reservation cannot be made more than {MAX_RESERVATION_ADVANCE_DAYS} days in advance",
+        )
+
     if slot.end_time <= now:
         raise HTTPException(status_code=400, detail="Cannot reserve a past slot")
 
+    active_reservation_result = await db.execute(
+        select(ConnectorSlot).where(
+            ConnectorSlot.reserved_by_user_id == current_user.user_id,
+            ConnectorSlot.status == SlotStatus.RESERVED,
+            ConnectorSlot.end_time > now,
+        )
+    )
+    active_reservations = active_reservation_result.scalars().all()
+    if len(active_reservations) >= MAX_ACTIVE_RESERVATIONS_PER_USER:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You can hold up to {MAX_ACTIVE_RESERVATIONS_PER_USER} active reservations",
+        )
+
     slot.status = SlotStatus.RESERVED
     slot.reserved_by_user_id = current_user.user_id
+    slot.reserved_by_user_name = current_user.user_name
+    slot.reserved_by_email = current_user.email
+    slot.reserved_by_phone_number = current_user.phone_number
     slot.reserved_at = now
+
+    await create_slot_reservation_record(db, slot, current_user, now)
 
     await db.commit()
 
@@ -343,7 +479,12 @@ async def cancel_slot_reservation_by_user(
 
     slot.status = SlotStatus.OPEN
     slot.reserved_by_user_id = None
+    slot.reserved_by_user_name = None
+    slot.reserved_by_email = None
+    slot.reserved_by_phone_number = None
     slot.reserved_at = None
+
+    await close_active_slot_reservations(db, slot.slot_id, ReservationStatus.CANCELLED)
 
     await db.commit()
 

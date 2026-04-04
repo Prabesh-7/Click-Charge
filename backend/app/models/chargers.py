@@ -71,6 +71,9 @@ class Connector(Base):
 
     current_transaction_id = Column(Integer, nullable=True)
     reserved_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    reserved_by_user_name = Column(String(100), nullable=True)
+    reserved_by_email = Column(String(150), nullable=True)
+    reserved_by_phone_number = Column(String(20), nullable=True)
     reserved_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_status_change = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -92,6 +95,9 @@ class ConnectorSlot(Base):
         default=SlotStatus.OPEN,
     )
     reserved_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    reserved_by_user_name = Column(String(100), nullable=True)
+    reserved_by_email = Column(String(150), nullable=True)
+    reserved_by_phone_number = Column(String(20), nullable=True)
     reserved_at = Column(DateTime(timezone=True), nullable=True)
     created_by_manager_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -106,5 +112,11 @@ async def create_tables():
 
         # Keep schema in sync for existing databases without migrations.
         await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_by_user_id INTEGER"))
+        await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_by_user_name VARCHAR(100)"))
+        await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_by_email VARCHAR(150)"))
+        await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_by_phone_number VARCHAR(20)"))
         await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_at TIMESTAMPTZ"))
+        await conn.execute(text("ALTER TABLE connector_slots ADD COLUMN IF NOT EXISTS reserved_by_user_name VARCHAR(100)"))
+        await conn.execute(text("ALTER TABLE connector_slots ADD COLUMN IF NOT EXISTS reserved_by_email VARCHAR(150)"))
+        await conn.execute(text("ALTER TABLE connector_slots ADD COLUMN IF NOT EXISTS reserved_by_phone_number VARCHAR(20)"))
     print("Charger Tables created!")

@@ -15,9 +15,12 @@ const managerSchema = z.object({
 const stationSchema = z.object({
   station_name: z.string().min(3, "Station name is required"),
   address: z.string().min(5, "Address is required"),
-  longitude: z.number(),
-  latitude: z.number(),
-  total_charger: z.number().min(1, "At least 1 charger is required"),
+  longitude: z.coerce.number().finite("Longitude must be a valid number"),
+  latitude: z.coerce.number().finite("Latitude must be a valid number"),
+  total_charger: z.coerce
+    .number()
+    .int("Total chargers must be a whole number")
+    .min(1, "At least 1 charger is required"),
 });
 
 // Combine manager + station

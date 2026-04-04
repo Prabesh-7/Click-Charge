@@ -63,6 +63,7 @@ export interface StationSlot {
   reserved_by_user_id: number | null;
   reserved_by_user_name: string | null;
   reserved_by_email: string | null;
+  reserved_by_phone_number: string | null;
   reserved_at: string | null;
   created_by_manager_id: number | null;
   created_at: string;

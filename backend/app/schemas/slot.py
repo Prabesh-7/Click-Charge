@@ -27,6 +27,7 @@ class SlotOut(BaseModel):
     reserved_by_user_id: Optional[int] = None
     reserved_by_user_name: Optional[str] = None
     reserved_by_email: Optional[str] = None
+    reserved_by_phone_number: Optional[str] = None
     reserved_at: Optional[datetime] = None
     created_by_manager_id: Optional[int] = None
     created_at: datetime

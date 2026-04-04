@@ -1,12 +1,13 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "@/features/auth/pages/Login";
 import Register from "@/features/auth/pages/Register";
-import UserDashboard from "@/features/user/pages/UserDashboard";
 
 import ManagerDashboard from "@/features/manager/pages/ManagerDashboard";
 
 import FindStations from "@/features/user/pages/FindStations";
 import StationAvailability from "@/features/user/pages/StationAvailability";
+import StationSlots from "@/features/user/pages/StationSlots";
+import UserStationDetails from "@/features/user/pages/StationDetails";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 
 import AddStations from "@/features/admin/pages/AddStations";
@@ -18,6 +19,8 @@ import MyChargers from "@/features/manager/pages/MyChargers";
 import ChargerControl from "@/features/manager/pages/ChargerControl";
 import StationDetails from "@/features/manager/pages/StationDetails";
 import ManageSlots from "@/features/manager/pages/ManageSlots";
+import LiveSession from "@/features/manager/pages/LiveSession";
+import Reservations from "@/features/manager/pages/Reservations";
 import StaffDashboard from "@/features/staff/pages/StaffDashboard";
 import MyStaff from "@/features/manager/pages/MyStaff";
 import StaffMyChargers from "@/features/staff/pages/MyChargers";
@@ -31,13 +34,18 @@ export default function AppRoutes() {
 
       {/* user*/}
       <Route path="/user" element={<DashboardLayout />}>
-        <Route path="dashboard" element={<UserDashboard />} />
+        <Route index element={<Navigate to="stations" replace />} />
         <Route path="stations" element={<FindStations />} />
+        <Route
+          path="stations/:stationId/details"
+          element={<UserStationDetails />}
+        />
         <Route path="availability" element={<StationAvailability />} />
         <Route
           path="stations/:stationId/availability"
           element={<StationAvailability />}
         />
+        <Route path="stations/:stationId/slots" element={<StationSlots />} />
       </Route>
 
       {/* admin */}
@@ -58,7 +66,9 @@ export default function AppRoutes() {
         <Route path="myStaff" element={<MyStaff />} />
         <Route path="myChargers" element={<MyChargers />} />
         <Route path="chargerControl" element={<ChargerControl />} />
+        <Route path="chargerControl/live-session" element={<LiveSession />} />
         <Route path="manageSlots" element={<ManageSlots />} />
+        <Route path="reservations" element={<Reservations />} />
       </Route>
 
       {/* staff */}

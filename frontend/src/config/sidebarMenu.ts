@@ -7,7 +7,6 @@ export type Role = "user" | "admin" | "staff" | "manager";
 
 const sidebarMenu: Record<Role, MenuItem[]> = {
   user: [
-    { label: "Dashboard", path: "/user/dashboard" },
     { label: "Find Stations", path: "/user/stations" },
     { label: "Charger Availability", path: "/user/availability" },
   ],
@@ -29,6 +28,7 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
     { label: "Station Details", path: "/manager/stationDetails" },
     { label: "My Chargers", path: "/manager/myChargers" },
     { label: "Manage Slots", path: "/manager/manageSlots" },
+    { label: "Reservations", path: "/manager/reservations" },
     { label: "My Staff", path: "/manager/myStaff" },
     { label: "Charger Control", path: "/manager/chargerControl" },
     { label: "Add Charger", path: "/manager/addCharger" },

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 from typing import List, Optional, Tuple
@@ -8,10 +8,15 @@ from uuid import uuid4
 import math
 
 from app.models.chargers import Charger, Connector, ChargerStatus, ChargerType
+from app.models.reservation import ReservationStatus
 from app.models.stations import Station
 from app.models.user import User
 from app.schemas.charger import ChargerCreate, ChargerOut, ChargerMeterValues
 from app.services.ocpp_service import ocpp_simulator
+from app.services.reservation_service import (
+    close_active_connector_reservations,
+    create_connector_reservation_record,
+)
 
 
 DEFAULT_PRICE_PER_KWH = 12.0
@@ -195,7 +200,7 @@ async def _reserve_connector(
     charger: Charger,
     db: AsyncSession,
     connector_id: Optional[int],
-    reserved_by_user_id: int,
+    reserved_by_user: User,
 ) -> dict:
     connector = await _resolve_connector_for_charger(charger, db, connector_id)
 
@@ -207,9 +212,14 @@ async def _reserve_connector(
     now = datetime.now(tz=timezone.utc)
     connector.status = ChargerStatus.RESERVED
     connector.current_transaction_id = None
-    connector.reserved_by_user_id = reserved_by_user_id
+    connector.reserved_by_user_id = reserved_by_user.user_id
+    connector.reserved_by_user_name = reserved_by_user.user_name
+    connector.reserved_by_email = reserved_by_user.email
+    connector.reserved_by_phone_number = reserved_by_user.phone_number
     connector.reserved_at = now
     connector.last_status_change = now
+
+    await create_connector_reservation_record(db, charger, connector, reserved_by_user, now)
 
     connectors = await _get_charger_connectors(charger, db)
     _sync_charger_state_from_connectors(charger, connectors)
@@ -230,6 +240,7 @@ async def _release_reserved_connector(
     connector_id: Optional[int],
     requested_by_user_id: Optional[int] = None,
     require_owner: bool = False,
+    release_status: ReservationStatus = ReservationStatus.RELEASED,
 ) -> dict:
     connector = await _resolve_connector_for_charger(charger, db, connector_id)
 
@@ -242,8 +253,13 @@ async def _release_reserved_connector(
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
     connector.reserved_by_user_id = None
+    connector.reserved_by_user_name = None
+    connector.reserved_by_email = None
+    connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
+
+    await close_active_connector_reservations(db, connector.connector_id, release_status)
 
     connectors = await _get_charger_connectors(charger, db)
     _sync_charger_state_from_connectors(charger, connectors)
@@ -273,8 +289,9 @@ async def _get_station_reservations(
             Connector.status,
             Connector.reserved_at,
             Connector.reserved_by_user_id,
-            User.user_name.label("reserved_by_user_name"),
-            User.email.label("reserved_by_email"),
+            func.coalesce(Connector.reserved_by_user_name, User.user_name).label("reserved_by_user_name"),
+            func.coalesce(Connector.reserved_by_email, User.email).label("reserved_by_email"),
+            func.coalesce(Connector.reserved_by_phone_number, User.phone_number).label("reserved_by_phone_number"),
         )
         .join(Connector, Connector.charger_id == Charger.charger_id)
         .outerjoin(User, User.user_id == Connector.reserved_by_user_id)
@@ -398,6 +415,9 @@ async def start_charging_by_manager(
     connector.status = ChargerStatus.IN_CHARGING
     connector.current_transaction_id = transaction_id
     connector.reserved_by_user_id = None
+    connector.reserved_by_user_name = None
+    connector.reserved_by_email = None
+    connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
@@ -425,7 +445,7 @@ async def reserve_connector_by_manager(
         charger,
         db,
         connector_id,
-        reserved_by_user_id=current_manager.user_id,
+        reserved_by_user=current_manager,
     )
 
 
@@ -476,6 +496,9 @@ async def stop_charging_by_manager(
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
     connector.reserved_by_user_id = None
+    connector.reserved_by_user_name = None
+    connector.reserved_by_email = None
+    connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
@@ -604,6 +627,9 @@ async def start_charging_by_staff(
     connector.status = ChargerStatus.IN_CHARGING
     connector.current_transaction_id = transaction_id
     connector.reserved_by_user_id = None
+    connector.reserved_by_user_name = None
+    connector.reserved_by_email = None
+    connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
@@ -653,6 +679,9 @@ async def stop_charging_by_staff(
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
     connector.reserved_by_user_id = None
+    connector.reserved_by_user_name = None
+    connector.reserved_by_email = None
+    connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
 
@@ -733,7 +762,7 @@ async def reserve_connector_by_staff(
         charger,
         db,
         connector_id,
-        reserved_by_user_id=current_staff.user_id,
+        reserved_by_user=current_staff,
     )
 
 
@@ -771,7 +800,7 @@ async def reserve_connector_by_user(
         charger,
         db,
         connector_id,
-        reserved_by_user_id=current_user.user_id,
+        reserved_by_user=current_user,
     )
 
 
@@ -797,6 +826,7 @@ async def cancel_user_reservation(
         connector_id,
         requested_by_user_id=current_user.user_id,
         require_owner=True,
+        release_status=ReservationStatus.CANCELLED,
     )
 
 
