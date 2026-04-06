@@ -8,6 +8,10 @@ import FindStations from "@/features/user/pages/FindStations";
 import StationAvailability from "@/features/user/pages/StationAvailability";
 import StationSlots from "@/features/user/pages/StationSlots";
 import UserStationDetails from "@/features/user/pages/StationDetails";
+import WalletDashboard from "@/features/user/pages/WalletDashboard";
+import EsewaPaymentPage from "@/features/user/pages/EsewaPaymentPage";
+import PaymentSuccess from "@/features/user/pages/PaymentSuccess";
+import PaymentFailure from "@/features/user/pages/PaymentFailure";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 
 import AddStations from "@/features/admin/pages/AddStations";
@@ -19,6 +23,9 @@ import MyChargers from "@/features/manager/pages/MyChargers";
 import ChargerControl from "@/features/manager/pages/ChargerControl";
 import StationDetails from "@/features/manager/pages/StationDetails";
 import ManageSlots from "@/features/manager/pages/ManageSlots";
+import SlotList from "@/features/manager/pages/SlotList";
+import Pricing from "@/features/manager/pages/Pricing";
+import ChargingSessions from "@/features/manager/pages/ChargingSessions";
 import LiveSession from "@/features/manager/pages/LiveSession";
 import Reservations from "@/features/manager/pages/Reservations";
 import StaffDashboard from "@/features/staff/pages/StaffDashboard";
@@ -46,6 +53,10 @@ export default function AppRoutes() {
           element={<StationAvailability />}
         />
         <Route path="stations/:stationId/slots" element={<StationSlots />} />
+        <Route path="wallet" element={<WalletDashboard />} />
+        <Route path="wallet/add-funds/esewa" element={<EsewaPaymentPage />} />
+        <Route path="wallet/payment-success" element={<PaymentSuccess />} />
+        <Route path="wallet/payment-failure" element={<PaymentFailure />} />
       </Route>
 
       {/* admin */}
@@ -65,9 +76,12 @@ export default function AppRoutes() {
         <Route path="addStaff" element={<AddStaff />} />
         <Route path="myStaff" element={<MyStaff />} />
         <Route path="myChargers" element={<MyChargers />} />
+        <Route path="pricing" element={<Pricing />} />
+        <Route path="chargingSessions" element={<ChargingSessions />} />
         <Route path="chargerControl" element={<ChargerControl />} />
         <Route path="chargerControl/live-session" element={<LiveSession />} />
         <Route path="manageSlots" element={<ManageSlots />} />
+        <Route path="slotList" element={<SlotList />} />
         <Route path="reservations" element={<Reservations />} />
       </Route>
 

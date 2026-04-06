@@ -7,6 +7,14 @@ import {
   type StationSlot,
 } from "@/api/userApi";
 
+const getTodayDateParam = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function StationSlots() {
   const navigate = useNavigate();
   const { stationId } = useParams();
@@ -67,7 +75,7 @@ export default function StationSlots() {
 
     try {
       setLoading(true);
-      const data = await getStationSlots(stationIdNum);
+      const data = await getStationSlots(stationIdNum, getTodayDateParam());
       setSlots(data);
       setError(null);
     } catch (err: any) {
@@ -94,8 +102,8 @@ export default function StationSlots() {
       setActionLoadingSlotId(slotId);
       setError(null);
       setSuccess(null);
-      await reserveSlot(slotId);
-      setSuccess("Slot reserved successfully.");
+      const response = await reserveSlot(slotId);
+      setSuccess(response?.message || "Slot reserved successfully.");
       await fetchSlots();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to reserve slot.");

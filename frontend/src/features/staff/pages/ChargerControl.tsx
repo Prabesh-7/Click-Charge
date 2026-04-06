@@ -46,12 +46,19 @@ interface MeterValues {
   frequency_hz: number;
   energy_kwh: number;
   reactive_energy_kvarh: number;
+  price_per_kwh?: number;
+  running_amount?: number;
+  currency?: string;
   temperature_c: number;
   soc_percent: number;
   timestamp: string;
 }
 
 interface ChargingSummary {
+  invoice_id?: string;
+  issued_at?: string;
+  charger_name?: string;
+  charge_point_id?: string;
   connector_number?: number | null;
   total_energy_kwh?: number;
   price_per_kwh?: number;
@@ -241,17 +248,32 @@ export default function StaffChargerControl() {
         selectedConnectorId || undefined,
       );
       const updated = response.charger;
-      if (typeof response.total_amount === "number") {
+      if (response?.invoice) {
+        const invoice = response.invoice;
         setLastSummary({
+          invoice_id: invoice.invoice_id,
+          issued_at: invoice.issued_at,
+          charger_name: invoice.charger_name,
+          charge_point_id: invoice.charge_point_id,
+          connector_number: invoice.connector_number,
+          total_energy_kwh: invoice.total_energy_kwh,
+          price_per_kwh: invoice.price_per_kwh,
+          total_amount: invoice.total_amount,
+          currency: invoice.currency,
+        });
+        alert(
+          `Charging stopped. Invoice ${invoice.invoice_id} | Total: ${invoice.currency || "NPR"} ${invoice.total_amount} for ${invoice.total_energy_kwh ?? 0} kWh`,
+        );
+      } else if (typeof response.total_amount === "number") {
+        setLastSummary({
+          charger_name: selectedCharger?.name,
+          charge_point_id: selectedConnector?.charge_point_id,
           connector_number: selectedConnector?.connector_number,
           total_energy_kwh: response.total_energy_kwh,
           price_per_kwh: response.price_per_kwh,
           total_amount: response.total_amount,
-          currency: response.currency,
+          currency: response.currency || "NPR",
         });
-        alert(
-          `Charging stopped. Total: ${response.currency || "INR"} ${response.total_amount} for ${response.total_energy_kwh ?? 0} kWh`,
-        );
       }
       setChargers((prev) =>
         prev.map((item) =>
@@ -426,9 +448,24 @@ export default function StaffChargerControl() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
+                  <span className="text-gray-500">Invoice ID:</span>
+                  <span className="text-gray-900 font-medium">
+                    {lastSummary.invoice_id ?? "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Charger:</span>
+                  <span className="text-gray-900 font-medium">
+                    {lastSummary.charger_name ?? "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-500">Connector:</span>
                   <span className="text-gray-900 font-medium">
                     {lastSummary.connector_number ?? "-"}
+                    {lastSummary.charge_point_id
+                      ? ` (${lastSummary.charge_point_id})`
+                      : ""}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -440,7 +477,7 @@ export default function StaffChargerControl() {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Rate:</span>
                   <span className="text-gray-900 font-medium">
-                    {(lastSummary.currency || "INR") +
+                    {(lastSummary.currency || "NPR") +
                       " " +
                       (lastSummary.price_per_kwh ?? 0)}
                     /kWh
@@ -449,7 +486,7 @@ export default function StaffChargerControl() {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Total Amount:</span>
                   <span className="text-gray-900 font-semibold">
-                    {(lastSummary.currency || "INR") +
+                    {(lastSummary.currency || "NPR") +
                       " " +
                       (lastSummary.total_amount ?? 0)}
                   </span>
@@ -701,6 +738,24 @@ export default function StaffChargerControl() {
                     <span className="text-gray-600">Transaction:</span>
                     <span className="text-gray-900 font-medium">
                       {meterValues.transaction_id ?? "-"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border border-emerald-100 bg-emerald-50 rounded p-3 space-y-2">
+                  <h4 className="font-semibold text-emerald-900">Billing</h4>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tariff:</span>
+                    <span className="text-gray-900 font-medium">
+                      {(meterValues.currency || "NPR") + " "}
+                      {Number(meterValues.price_per_kwh ?? 0).toFixed(2)}/kWh
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Running Amount:</span>
+                    <span className="text-gray-900 font-semibold">
+                      {(meterValues.currency || "NPR") + " "}
+                      {Number(meterValues.running_amount ?? 0).toFixed(2)}
                     </span>
                   </div>
                 </div>

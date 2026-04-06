@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -93,10 +94,11 @@ async def get_station_reservations(
 
 @router.get("/slots", response_model=List[SlotOut])
 async def get_station_slots(
+    slot_date: date | None = Query(default=None),
     current_staff: User = Depends(require_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_slots_by_staff(current_staff, db)
+    return await get_slots_by_staff(current_staff, db, slot_date)
 
 
 @router.post("/slots/{slot_id}/release")

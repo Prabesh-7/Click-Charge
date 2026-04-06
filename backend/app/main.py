@@ -4,6 +4,8 @@ from app.models.user import create_tables as create_user_tables
 from app.models.stations import create_tables as create_station_tables
 from app.models.chargers import create_tables as create_charger_tables
 from app.models.reservation import create_tables as create_reservation_tables
+from app.models.wallet import create_tables as create_wallet_tables
+from app.models.charging_session import create_tables as create_charging_session_tables
 
 from app.routes import auth
 from app.routes import admin_routes
@@ -11,6 +13,7 @@ from app.routes import manager_routes
 from app.routes import staff_routes
 from app.routes import user_routes
 from app.routes import ocpp_routes
+from app.routes import wallet_routes
 
 import os
 
@@ -43,6 +46,7 @@ app.include_router(manager_routes.router)
 app.include_router(staff_routes.router)
 app.include_router(user_routes.router)
 app.include_router(ocpp_routes.router)
+app.include_router(wallet_routes.router)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
@@ -57,5 +61,7 @@ async def on_startup():
     await create_station_tables()
     await create_charger_tables()
     await create_reservation_tables()
+    await create_wallet_tables()
+    await create_charging_session_tables()
     
     

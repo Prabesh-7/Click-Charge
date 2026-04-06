@@ -17,7 +17,6 @@ import {
   type UserStationCharger,
   type UserStationConnector,
 } from "@/api/userApi";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function StationAvailability() {
   const { stationId } = useParams();
@@ -277,7 +276,7 @@ export default function StationAvailability() {
               </div>
             </div>
 
-            {/* Chargers List */}
+            {/* Chargers Grid */}
             {selectedStation.chargers && selectedStation.chargers.length > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -287,108 +286,121 @@ export default function StationAvailability() {
                   <p className="text-xs text-gray-500">Real-time status</p>
                 </div>
 
-                <ScrollArea className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="space-y-2 p-4">
-                    {selectedStation.chargers.map(
-                      (charger: UserStationCharger) => (
-                        <div key={charger.charger_id}>
-                          {/* Charger Header */}
-                          <div className="mb-3 flex items-start justify-between gap-3 pb-3 border-b border-gray-100">
-                            <div className="flex-1">
-                              <h4 className="font-bold text-gray-900">
-                                {charger.name}
-                              </h4>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Type:{" "}
-                                <span className="font-medium text-gray-700">
-                                  {charger.type}
-                                </span>
-                              </p>
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-2">
+                  {selectedStation.chargers.map(
+                    (charger: UserStationCharger) => {
+                      const totalConnectors = charger.connectors?.length || 0;
+                      const availableConnectors = (
+                        charger.connectors || []
+                      ).filter(
+                        (connector) => connector.status === "AVAILABLE",
+                      ).length;
+
+                      return (
+                        <div
+                          key={charger.charger_id}
+                          className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
+                        >
+                          <div className="border-b border-gray-100 p-4">
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="truncate text-base font-bold text-gray-900">
+                                  {charger.name}
+                                </h4>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Type:{" "}
+                                  <span className="font-semibold text-gray-700">
+                                    {charger.type}
+                                  </span>
+                                </p>
+                              </div>
+                              <span
+                                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeColor(charger.status)}`}
+                              >
+                                {getStatusIcon(charger.status)}
+                                {charger.status}
+                              </span>
                             </div>
-                            <span
-                              className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${getStatusBadgeColor(charger.status)}`}
-                            >
-                              {getStatusIcon(charger.status)}
-                              {charger.status}
-                            </span>
+
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#22C55E]/10 px-2.5 py-1 text-xs font-semibold text-[#22C55E]">
+                              {availableConnectors}/{totalConnectors} connectors
+                              available
+                            </div>
                           </div>
 
-                          {/* Connectors */}
-                          {charger.connectors &&
-                            charger.connectors.length > 0 && (
-                              <div className="space-y-2 ml-2">
-                                {charger.connectors.map(
-                                  (connector: UserStationConnector) => {
-                                    const reservationWindows =
-                                      reservedSlotTimesByConnector.get(
-                                        connector.connector_id,
-                                      ) || [];
+                          <div className="space-y-2 p-4">
+                            {(charger.connectors || []).map(
+                              (connector: UserStationConnector) => {
+                                const reservationWindows =
+                                  reservedSlotTimesByConnector.get(
+                                    connector.connector_id,
+                                  ) || [];
 
-                                    return (
-                                      <div
-                                        key={connector.connector_id}
-                                        className="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition"
-                                      >
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-gray-200">
-                                            <Plug
-                                              size={16}
-                                              className="text-[#22C55E]"
-                                            />
-                                          </div>
-                                          <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-semibold text-gray-900 truncate">
-                                              Connector{" "}
-                                              {connector.connector_number}
-                                            </p>
-                                            <p
-                                              className={`text-xs font-medium mt-0.5 px-2 py-0.5 rounded inline-flex items-center gap-1 ${getStatusColor(connector.status)}`}
-                                            >
-                                              {getStatusIcon(connector.status)}
-                                              {connector.status}
-                                            </p>
-                                            {reservationWindows.length > 0 && (
-                                              <div className="mt-1 space-y-1">
-                                                {reservationWindows.map(
-                                                  (window, index) => (
-                                                    <p
-                                                      key={`${connector.connector_id}-${window.start}-${index}`}
-                                                      className="text-xs text-amber-700"
-                                                    >
-                                                      Reserved from{" "}
-                                                      {formatReservationWindow(
-                                                        window.start,
-                                                        window.end,
-                                                      )}
-                                                    </p>
-                                                  ),
-                                                )}
-                                              </div>
-                                            )}
-                                          </div>
+                                return (
+                                  <div
+                                    key={connector.connector_id}
+                                    className="rounded-lg border border-gray-200 bg-gray-50 p-3"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#22C55E] shadow-sm">
+                                          <Plug size={15} />
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="truncate text-sm font-semibold text-gray-900">
+                                            Connector{" "}
+                                            {connector.connector_number}
+                                          </p>
+                                          <p
+                                            className={`mt-0.5 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${getStatusColor(connector.status)}`}
+                                          >
+                                            {getStatusIcon(connector.status)}
+                                            {connector.status}
+                                          </p>
                                         </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            navigate(
-                                              `/user/stations/${selectedStation.station_id}/slots?connector=${connector.connector_id}`,
-                                            );
-                                          }}
-                                          className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
-                                        >
-                                          View Slot
-                                        </button>
                                       </div>
-                                    );
-                                  },
-                                )}
-                              </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigate(
+                                            `/user/stations/${selectedStation.station_id}/slots?connector=${connector.connector_id}`,
+                                          );
+                                        }}
+                                        className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
+                                      >
+                                        View Slot
+                                      </button>
+                                    </div>
+
+                                    {reservationWindows.length > 0 && (
+                                      <div className="mt-2 space-y-1 pl-10">
+                                        {reservationWindows.map(
+                                          (window, index) => (
+                                            <p
+                                              key={`${connector.connector_id}-${window.start}-${index}`}
+                                              className="text-xs text-amber-700"
+                                            >
+                                              Reserved from{" "}
+                                              {formatReservationWindow(
+                                                window.start,
+                                                window.end,
+                                              )}
+                                            </p>
+                                          ),
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              },
                             )}
+                          </div>
                         </div>
-                      ),
-                    )}
-                  </div>
-                </ScrollArea>
+                      );
+                    },
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-16 text-center">

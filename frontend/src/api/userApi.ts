@@ -78,9 +78,13 @@ export const getUserStations = async () => {
   return response.data as UserStation[];
 };
 
-export const getStationSlots = async (stationId: number): Promise<StationSlot[]> => {
+export const getStationSlots = async (
+  stationId: number,
+  slotDate?: string,
+): Promise<StationSlot[]> => {
   const { data } = await api.get<StationSlot[]>(`/user/stations/${stationId}/slots`, {
     headers: authHeader(),
+    params: slotDate ? { slot_date: slotDate } : undefined,
   });
   return data;
 };

@@ -34,7 +34,7 @@ export default function Sidebar() {
         {menu.map((item) => {
           const active = location.pathname === item.path;
           return (
-            <li key={item.path}>
+            <li key={`${item.label}-${item.path}`}>
               <Link
                 to={item.path}
                 className={[

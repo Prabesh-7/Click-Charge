@@ -20,6 +20,7 @@ export interface ManagerCharger {
   }[];
   status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
   type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
+  price_per_kwh: number;
   max_power_kw: number;
   current_transaction_id?: number | null;
   created_at: string;
@@ -115,6 +116,24 @@ export interface UpdateSlotPayload {
   start_time?: string;
   end_time?: string;
   status?: string;
+}
+
+export interface ChargingSessionItem {
+  session_id: number;
+  station_id: number;
+  charger_id: number;
+  charger_name: string;
+  connector_id: number;
+  connector_number: number;
+  start_time: string;
+  end_time: string | null;
+  started_by_user_id: number | null;
+  invoice_id: string | null;
+  invoice_issued_at: string | null;
+  invoice_currency: string | null;
+  invoice_total_energy_kwh: number | null;
+  invoice_price_per_kwh: number | null;
+  invoice_total_amount: number | null;
 }
 
 const authHeader = () => {
@@ -292,9 +311,18 @@ export const getManagerReservations = async () => {
   return response.data as ReservationItem[];
 };
 
-export const getManagerSlots = async (): Promise<Slot[]> => {
+export const getManagerChargingSessions = async (): Promise<ChargingSessionItem[]> => {
+  const response = await api.get("/manager/charging-sessions", {
+    headers: authHeader(),
+  });
+
+  return response.data as ChargingSessionItem[];
+};
+
+export const getManagerSlots = async (slotDate?: string): Promise<Slot[]> => {
   const response = await api.get('/manager/slots', {
     headers: authHeader(),
+    params: slotDate ? { slot_date: slotDate } : undefined,
   });
   return response.data as Slot[];
 };
@@ -333,6 +361,7 @@ export const updateCharger = async (chargerId: number, data: CreateChargerSchema
     {
       name: data.name,
       type: data.type,
+      price_per_kwh: data.price_per_kwh,
       max_power_kw: data.max_power_kw,
       current_transaction_id: data.current_transaction_id,
     },
@@ -342,6 +371,18 @@ export const updateCharger = async (chargerId: number, data: CreateChargerSchema
   );
 
   return response.data;
+};
+
+export const updateChargerPricing = async (chargerId: number, pricePerKwh: number) => {
+  const response = await api.put(
+    `/manager/chargers/${chargerId}/pricing`,
+    { price_per_kwh: pricePerKwh },
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data as ManagerCharger;
 };
 
 export const deleteCharger = async (chargerId: number) => {

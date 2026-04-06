@@ -12,11 +12,13 @@ import {
   Plug,
   Search,
   UtensilsCrossed,
+  Wallet,
   Wifi,
   X,
   Zap,
 } from "lucide-react";
 import { getUserStations, type UserStation } from "@/api/userApi";
+import { getWalletSummary } from "@/api/walletApi";
 import {
   DialogClose,
   Dialog,
@@ -79,6 +81,7 @@ export default function FindStations() {
   const [selectedStation, setSelectedStation] = useState<UserStation | null>(
     null,
   );
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchStations = async (isInitialLoad = false) => {
@@ -116,6 +119,27 @@ export default function FindStations() {
 
     return () => {
       window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const data = await getWalletSummary();
+        setWalletBalance(Number(data.balance || 0));
+      } catch {
+        setWalletBalance(null);
+      }
+    };
+
+    void fetchWallet();
+
+    const walletInterval = window.setInterval(() => {
+      void fetchWallet();
+    }, 10000);
+
+    return () => {
+      window.clearInterval(walletInterval);
     };
   }, []);
 
@@ -235,7 +259,20 @@ export default function FindStations() {
             </div>
 
             {!loading && stations.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 justify-end">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+                  <Wallet size={13} />
+                  Balance: Rs{" "}
+                  {walletBalance === null ? "..." : walletBalance.toFixed(2)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/user/wallet")}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                >
+                  <Wallet size={13} />
+                  Add Balance
+                </button>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-[#22C55E]/20 bg-[#22C55E]/5 px-3 py-1.5 text-xs font-medium text-[#22C55E] shadow-sm">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
                   {availableCount} available

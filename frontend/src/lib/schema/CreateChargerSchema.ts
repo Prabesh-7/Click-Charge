@@ -19,6 +19,11 @@ export const createChargerSchema = z.object({
     .min(1, "Max power must be at least 1 kW")
     .optional()
     .default(50),
+  price_per_kwh: z
+    .coerce.number()
+    .min(0, "Price per kWh must be zero or greater")
+    .optional()
+    .default(12),
   current_transaction_id: z
     .coerce.number()
     .int()

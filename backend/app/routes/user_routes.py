@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,10 +49,11 @@ async def cancel_reservation(
 @router.get("/stations/{station_id}/slots", response_model=list[SlotOut])
 async def get_station_slots(
     station_id: int,
+    slot_date: date | None = Query(default=None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_slots_by_station(station_id, db)
+    return await get_slots_by_station(station_id, db, slot_date)
 
 
 @router.post("/slots/{slot_id}/reserve")

@@ -9,6 +9,8 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
   user: [
     { label: "Find Stations", path: "/user/stations" },
     { label: "Charger Availability", path: "/user/availability" },
+    { label: "Wallet", path: "/user/wallet" },
+    { label: "Add Balance", path: "/user/wallet" },
   ],
 
   admin: [
@@ -27,7 +29,10 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
     { label: "Dashboard", path: "/manager/dashboard" },
     { label: "Station Details", path: "/manager/stationDetails" },
     { label: "My Chargers", path: "/manager/myChargers" },
+    { label: "Pricing", path: "/manager/pricing" },
+    { label: "Charging Sessions", path: "/manager/chargingSessions" },
     { label: "Manage Slots", path: "/manager/manageSlots" },
+    { label: "Slot List", path: "/manager/slotList" },
     { label: "Reservations", path: "/manager/reservations" },
     { label: "My Staff", path: "/manager/myStaff" },
     { label: "Charger Control", path: "/manager/chargerControl" },

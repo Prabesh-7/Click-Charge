@@ -5,6 +5,14 @@ import {
   type Slot,
 } from "@/api/managerApi";
 
+const getTodayDateParam = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function Reservations() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +34,7 @@ export default function Reservations() {
   const fetchSlots = async () => {
     try {
       setLoading(true);
-      const data = await getManagerSlots();
+      const data = await getManagerSlots(getTodayDateParam());
       setSlots(data);
       setError(null);
     } catch (err: any) {

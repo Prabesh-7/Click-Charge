@@ -90,9 +90,10 @@ export const getStaffReservations = async () => {
   return response.data;
 };
 
-export const getStaffSlots = async (): Promise<StaffSlot[]> => {
+export const getStaffSlots = async (slotDate?: string): Promise<StaffSlot[]> => {
   const response = await api.get('/staff/slots', {
     headers: authHeader(),
+    params: slotDate ? { slot_date: slotDate } : undefined,
   });
   return response.data as StaffSlot[];
 };

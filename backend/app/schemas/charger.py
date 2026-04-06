@@ -20,6 +20,7 @@ class ChargerBase(BaseModel):
 class ChargerCreate(ChargerBase):
     connector_count: Optional[int] = 1
     max_power_kw: Optional[int] = 50  # default if not provided
+    price_per_kwh: Optional[float] = 12.0
     current_transaction_id: Optional[int] = None  # optional
 
     @field_validator("connector_count")
@@ -29,11 +30,31 @@ class ChargerCreate(ChargerBase):
             raise ValueError("connector_count must be at least 1")
         return v
 
+    @field_validator("price_per_kwh")
+    @classmethod
+    def price_per_kwh_must_be_valid(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and v < 0:
+            raise ValueError("price_per_kwh must be zero or greater")
+        return v
+
     @model_validator(mode="after")
     def set_defaults_for_simple_payload(self):
         if self.connector_count is None:
             self.connector_count = 1
+        if self.price_per_kwh is None:
+            self.price_per_kwh = 12.0
         return self
+
+
+class ChargerPricingUpdate(BaseModel):
+    price_per_kwh: float
+
+    @field_validator("price_per_kwh")
+    @classmethod
+    def price_per_kwh_must_be_valid(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("price_per_kwh must be zero or greater")
+        return v
 
 
 class ConnectorOut(BaseModel):
@@ -58,6 +79,7 @@ class ChargerOut(BaseModel):
     charge_point_id: str
     status: ChargerStatus
     type: ChargerType
+    price_per_kwh: float
     max_power_kw: int
     current_transaction_id: Optional[int] = None
     connectors: list[ConnectorOut] = []
@@ -68,6 +90,20 @@ class ChargerOut(BaseModel):
         from_attributes = True
 
 
+class ChargingInvoice(BaseModel):
+    invoice_id: str
+    issued_at: datetime
+    currency: str
+    charger_id: int
+    charger_name: str
+    connector_id: int
+    connector_number: int
+    charge_point_id: str
+    total_energy_kwh: float
+    price_per_kwh: float
+    total_amount: float
+
+
 class ChargerControlResponse(BaseModel):
     charger: ChargerOut
     message: str
@@ -75,6 +111,7 @@ class ChargerControlResponse(BaseModel):
     price_per_kwh: Optional[float] = None
     total_amount: Optional[float] = None
     currency: Optional[str] = None
+    invoice: Optional[ChargingInvoice] = None
 
 
 class ChargerMeterValues(BaseModel):
@@ -92,6 +129,9 @@ class ChargerMeterValues(BaseModel):
     frequency_hz: float
     energy_kwh: float
     reactive_energy_kvarh: float
+    price_per_kwh: Optional[float] = None
+    running_amount: Optional[float] = None
+    currency: Optional[str] = None
     temperature_c: float
     soc_percent: float
     timestamp: datetime

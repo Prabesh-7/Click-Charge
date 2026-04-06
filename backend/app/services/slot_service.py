@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,7 @@ from app.services.reservation_service import (
     close_active_slot_reservations,
     create_slot_reservation_record,
 )
+from app.services.wallet_service import debit_wallet_for_slot_reservation, SLOT_RESERVATION_FEE
 
 
 # Practical balancing policy for walk-in users and app reservations.
@@ -180,7 +181,15 @@ async def create_slot_by_manager(
     return {"message": "Slot created successfully"}
 
 
-async def _get_station_slots(station_id: int, db: AsyncSession) -> list[dict]:
+async def _get_station_slots(
+    station_id: int,
+    db: AsyncSession,
+    slot_date: date | None = None,
+) -> list[dict]:
+    target_date = slot_date or datetime.now(tz=timezone.utc).date()
+    day_start = datetime.combine(target_date, time.min, tzinfo=timezone.utc)
+    day_end = day_start + timedelta(days=1)
+
     result = await db.execute(
         select(
             ConnectorSlot.slot_id,
@@ -204,7 +213,11 @@ async def _get_station_slots(station_id: int, db: AsyncSession) -> list[dict]:
         .join(Connector, Connector.connector_id == ConnectorSlot.connector_id)
         .join(Charger, Charger.charger_id == Connector.charger_id)
         .outerjoin(User, User.user_id == ConnectorSlot.reserved_by_user_id)
-        .where(Charger.station_id == station_id)
+        .where(
+            Charger.station_id == station_id,
+            ConnectorSlot.start_time >= day_start,
+            ConnectorSlot.start_time < day_end,
+        )
         .order_by(ConnectorSlot.start_time.asc())
     )
 
@@ -225,6 +238,7 @@ async def _get_station_slots(station_id: int, db: AsyncSession) -> list[dict]:
 async def get_slots_by_manager(
     current_manager: User,
     db: AsyncSession,
+    slot_date: date | None = None,
 ) -> list[dict]:
     await _refresh_slot_statuses(db)
 
@@ -236,27 +250,29 @@ async def get_slots_by_manager(
     if not station:
         return []
 
-    return await _get_station_slots(station.station_id, db)
+    return await _get_station_slots(station.station_id, db, slot_date)
 
 
 async def get_slots_by_staff(
     current_staff: User,
     db: AsyncSession,
+    slot_date: date | None = None,
 ) -> list[dict]:
     await _refresh_slot_statuses(db)
 
     if not current_staff.station_id:
         return []
 
-    return await _get_station_slots(current_staff.station_id, db)
+    return await _get_station_slots(current_staff.station_id, db, slot_date)
 
 
 async def get_slots_by_station(
     station_id: int,
     db: AsyncSession,
+    slot_date: date | None = None,
 ) -> list[dict]:
     await _refresh_slot_statuses(db)
-    return await _get_station_slots(station_id, db)
+    return await _get_station_slots(station_id, db, slot_date)
 
 
 async def _get_manager_slot(
@@ -451,11 +467,21 @@ async def reserve_slot_by_user(
     slot.reserved_by_phone_number = current_user.phone_number
     slot.reserved_at = now
 
+    balance_after_payment = await debit_wallet_for_slot_reservation(
+        current_user=current_user,
+        db=db,
+        slot_id=slot.slot_id,
+    )
+
     await create_slot_reservation_record(db, slot, current_user, now)
 
     await db.commit()
 
-    return {"message": "Slot reserved successfully"}
+    return {
+        "message": "Slot reserved successfully",
+        "paid_amount": float(SLOT_RESERVATION_FEE),
+        "wallet_balance": float(balance_after_payment),
+    }
 
 
 async def cancel_slot_reservation_by_user(

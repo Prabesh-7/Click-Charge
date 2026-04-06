@@ -1,9 +1,11 @@
+from datetime import date
 from fastapi import APIRouter, Depends, Query, File, UploadFile, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.charger import ChargerCreate, ChargerOut, ChargerControlResponse, ChargerMeterValues
+from app.schemas.charger import ChargerCreate, ChargerOut, ChargerControlResponse, ChargerMeterValues, ChargerPricingUpdate
+from app.schemas.charging_session import ChargingSessionOut
 from app.schemas.reservation import ReservationOut
 from app.schemas.slot import SlotCreate, SlotOut, SlotUpdate
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
@@ -19,6 +21,8 @@ from app.services.charger_service import (
     get_meter_values_by_manager,
     edit_charger_by_manager,
     delete_charger_by_manager,
+    update_charger_pricing_by_manager,
+    get_charging_sessions_by_manager,
 )
 from app.services.manager_service import (
     create_staff_for_manager,
@@ -155,12 +159,21 @@ async def get_my_reservations(
     return await get_reservations_by_manager(current_manager, db)
 
 
-@router.get("/slots", response_model=List[SlotOut])
-async def get_manageable_slots(
+@router.get("/charging-sessions", response_model=List[ChargingSessionOut])
+async def get_my_charging_sessions(
     current_manager: User = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_slots_by_manager(current_manager, db)
+    return await get_charging_sessions_by_manager(current_manager, db)
+
+
+@router.get("/slots", response_model=List[SlotOut])
+async def get_manageable_slots(
+    slot_date: date | None = Query(default=None),
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_slots_by_manager(current_manager, db, slot_date)
 
 
 @router.post("/slots")
@@ -211,6 +224,16 @@ async def edit_charger(
     Edit charger details for the manager's station.
     """
     return await edit_charger_by_manager(charger_id, data, current_manager, db)
+
+
+@router.put("/chargers/{charger_id}/pricing", response_model=ChargerOut)
+async def update_charger_pricing(
+    charger_id: int,
+    data: ChargerPricingUpdate,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await update_charger_pricing_by_manager(charger_id, data, current_manager, db)
 
 
 @router.delete("/chargers/{charger_id}")

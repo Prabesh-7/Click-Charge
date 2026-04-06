@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, UniqueConstraint, text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, UniqueConstraint, Numeric, text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base, engine
@@ -45,6 +45,8 @@ class Charger(Base):
         nullable=False
     )
 
+    # Manager-configurable energy pricing used for session billing.
+    price_per_kwh = Column(Numeric(10, 2), nullable=False, server_default=text("12.00"))
     max_power_kw = Column(Integer, nullable=False, default=50)  # simulator power capacity
     current_transaction_id = Column(Integer, nullable=True)      # track simulated session
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -119,4 +121,5 @@ async def create_tables():
         await conn.execute(text("ALTER TABLE connector_slots ADD COLUMN IF NOT EXISTS reserved_by_user_name VARCHAR(100)"))
         await conn.execute(text("ALTER TABLE connector_slots ADD COLUMN IF NOT EXISTS reserved_by_email VARCHAR(150)"))
         await conn.execute(text("ALTER TABLE connector_slots ADD COLUMN IF NOT EXISTS reserved_by_phone_number VARCHAR(20)"))
+        await conn.execute(text("ALTER TABLE chargers ADD COLUMN IF NOT EXISTS price_per_kwh NUMERIC(10,2) NOT NULL DEFAULT 12.00"))
     print("Charger Tables created!")

@@ -15,6 +15,7 @@ type Charger = {
   name: string;
   charge_point_id: string;
   type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
+  price_per_kwh: number;
   max_power_kw: number;
   connectors: {
     connector_id: number;
@@ -248,6 +249,13 @@ export default function ChargerControl() {
                               {charger.charge_point_id}
                             </span>
                           </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Tariff:{" "}
+                            <span className="font-semibold text-gray-700">
+                              Rs {Number(charger.price_per_kwh ?? 0).toFixed(2)}
+                              /kWh
+                            </span>
+                          </p>
                         </div>
                         <span
                           className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
@@ -351,7 +359,7 @@ export default function ChargerControl() {
               </DialogTitle>
               <DialogDescription className="text-sm text-slate-600">
                 {selectedCharger
-                  ? `${selectedCharger.name} • ${selectedCharger.type} • ${selectedCharger.max_power_kw} kW`
+                  ? `${selectedCharger.name} • ${selectedCharger.type} • ${selectedCharger.max_power_kw} kW • Rs ${Number(selectedCharger.price_per_kwh ?? 0).toFixed(2)}/kWh`
                   : "Choose one available connector."}
               </DialogDescription>
             </DialogHeader>

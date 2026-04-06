@@ -13,8 +13,25 @@ type MeterValues = {
   voltage_v: number;
   current_a: number;
   energy_kwh: number;
+  price_per_kwh?: number;
+  running_amount?: number;
+  currency?: string;
   soc_percent: number;
   timestamp: string;
+};
+
+type ChargingInvoice = {
+  invoice_id: string;
+  issued_at: string;
+  currency: string;
+  charger_id: number;
+  charger_name: string;
+  connector_id: number;
+  connector_number: number;
+  charge_point_id: string;
+  total_energy_kwh: number;
+  price_per_kwh: number;
+  total_amount: number;
 };
 
 type LiveSessionState = {
@@ -62,6 +79,9 @@ export default function LiveSession() {
   const [loading, setLoading] = useState(true);
   const [stopLoadingKey, setStopLoadingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [latestInvoice, setLatestInvoice] = useState<ChargingInvoice | null>(
+    null,
+  );
 
   const activeConnectors = useMemo<ActiveConnector[]>(() => {
     const list: ActiveConnector[] = [];
@@ -172,7 +192,21 @@ export default function LiveSession() {
 
     try {
       setStopLoadingKey(key);
-      await stopCharging(chargerId, connectorId);
+      const response = await stopCharging(chargerId, connectorId);
+      if (response?.invoice) {
+        const invoice = response.invoice as ChargingInvoice;
+        setLatestInvoice(invoice);
+        alert(
+          [
+            `Invoice: ${invoice.invoice_id}`,
+            `Charger: ${invoice.charger_name} (ID ${invoice.charger_id})`,
+            `Connector: ${invoice.connector_number} (${invoice.charge_point_id})`,
+            `Energy: ${invoice.total_energy_kwh} kWh`,
+            `Rate: ${invoice.currency} ${invoice.price_per_kwh}/kWh`,
+            `Total: ${invoice.currency} ${invoice.total_amount}`,
+          ].join("\n"),
+        );
+      }
       await fetchChargers();
     } catch (err: any) {
       alert(err.response?.data?.detail || "Failed to stop charging.");
@@ -223,6 +257,35 @@ export default function LiveSession() {
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
             {error}
           </div>
+        )}
+
+        {latestInvoice && (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+            <h2 className="text-base font-semibold text-emerald-900">
+              Latest Invoice
+            </h2>
+            <div className="mt-2 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+              <p className="text-emerald-900">
+                Invoice: {latestInvoice.invoice_id}
+              </p>
+              <p className="text-emerald-900">
+                Charger: {latestInvoice.charger_name}
+              </p>
+              <p className="text-emerald-900">
+                Connector: {latestInvoice.connector_number} (
+                {latestInvoice.charge_point_id})
+              </p>
+              <p className="text-emerald-900">
+                Energy: {latestInvoice.total_energy_kwh} kWh
+              </p>
+              <p className="text-emerald-900">
+                Rate: {latestInvoice.currency} {latestInvoice.price_per_kwh}/kWh
+              </p>
+              <p className="font-semibold text-emerald-900">
+                Total: {latestInvoice.currency} {latestInvoice.total_amount}
+              </p>
+            </div>
+          </section>
         )}
 
         {activeConnectors.length === 0 && (
@@ -289,6 +352,20 @@ export default function LiveSession() {
                       <p className="text-slate-500">SOC</p>
                       <p className="font-semibold text-slate-900">
                         {meter?.soc_percent ?? "-"} %
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2">
+                      <p className="text-emerald-700">Tariff</p>
+                      <p className="font-semibold text-emerald-900">
+                        {(meter?.currency || "NPR") + " "}
+                        {Number(meter?.price_per_kwh ?? 0).toFixed(2)}/kWh
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 px-3 py-2">
+                      <p className="text-emerald-700">Running Amount</p>
+                      <p className="font-semibold text-emerald-900">
+                        {(meter?.currency || "NPR") + " "}
+                        {Number(meter?.running_amount ?? 0).toFixed(2)}
                       </p>
                     </div>
                     <div className="rounded-lg bg-slate-50 px-3 py-2">

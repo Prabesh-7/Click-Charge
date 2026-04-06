@@ -31,6 +31,7 @@ interface Charger {
   }[];
   status: "AVAILABLE" | "IN_CHARGING" | "RESERVED";
   type: "CCS2" | "GBT" | "TYPE2" | "CHAdeMO";
+  price_per_kwh: number;
   max_power_kw: number;
   current_transaction_id?: number | null;
   created_at: string;
@@ -96,6 +97,7 @@ export default function MyChargers() {
     setValue("name", charger.name);
     setValue("connector_count", charger.connectors?.length || 1);
     setValue("type", charger.type);
+    setValue("price_per_kwh", charger.price_per_kwh);
     setValue("max_power_kw", charger.max_power_kw);
     setValue(
       "current_transaction_id",
@@ -269,6 +271,12 @@ export default function MyChargers() {
                           {charger.max_power_kw} kW
                         </p>
                       </div>
+                      <div className="rounded-lg bg-gray-50 px-2.5 py-2 col-span-2">
+                        <p className="text-gray-500">Energy Price</p>
+                        <p className="font-semibold text-gray-800">
+                          Rs {Number(charger.price_per_kwh ?? 0).toFixed(2)}/kWh
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -419,6 +427,28 @@ export default function MyChargers() {
                 {errors.max_power_kw && (
                   <p className="text-sm text-red-500">
                     {errors.max_power_kw.message}
+                  </p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-base font-medium">
+                  Price Per kWh (Rs)
+                </FieldLabel>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  className="h-10 border border-[#B6B6B6]"
+                  placeholder="e.g. 12"
+                  {...register("price_per_kwh", {
+                    setValueAs: (value) =>
+                      value === "" ? undefined : Number(value),
+                  })}
+                />
+                {errors.price_per_kwh && (
+                  <p className="text-sm text-red-500">
+                    {errors.price_per_kwh.message}
                   </p>
                 )}
               </Field>

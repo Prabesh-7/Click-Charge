@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 from typing import List, Optional, Tuple
@@ -8,10 +8,11 @@ from uuid import uuid4
 import math
 
 from app.models.chargers import Charger, Connector, ChargerStatus, ChargerType
+from app.models.charging_session import ChargingSession
 from app.models.reservation import ReservationStatus
 from app.models.stations import Station
 from app.models.user import User
-from app.schemas.charger import ChargerCreate, ChargerOut, ChargerMeterValues
+from app.schemas.charger import ChargerCreate, ChargerOut, ChargerMeterValues, ChargerPricingUpdate
 from app.services.ocpp_service import ocpp_simulator
 from app.services.reservation_service import (
     close_active_connector_reservations,
@@ -20,7 +21,29 @@ from app.services.reservation_service import (
 
 
 DEFAULT_PRICE_PER_KWH = 12.0
-DEFAULT_CURRENCY = "INR"
+DEFAULT_CURRENCY = "NPR"
+
+
+def _build_charging_invoice(
+    charger: Charger,
+    connector: Connector,
+    energy_kwh: float,
+    price_per_kwh: float,
+    total_amount: float,
+) -> dict:
+    return {
+        "invoice_id": f"INV-{uuid4().hex[:10].upper()}",
+        "issued_at": datetime.now(tz=timezone.utc),
+        "currency": DEFAULT_CURRENCY,
+        "charger_id": charger.charger_id,
+        "charger_name": charger.name,
+        "connector_id": connector.connector_id,
+        "connector_number": connector.connector_number,
+        "charge_point_id": connector.charge_point_id,
+        "total_energy_kwh": round(energy_kwh, 3),
+        "price_per_kwh": round(price_per_kwh, 2),
+        "total_amount": round(total_amount, 2),
+    }
 
 
 async def add_charger_by_manager(
@@ -52,6 +75,7 @@ async def add_charger_by_manager(
         charge_point_id=generated_primary_cpid,
         status=data.status or ChargerStatus.AVAILABLE,  # default if not provided
         type=data.type,
+        price_per_kwh=data.price_per_kwh if data.price_per_kwh is not None else DEFAULT_PRICE_PER_KWH,
         max_power_kw=data.max_power_kw or 50,      # new field with default
         current_transaction_id=data.current_transaction_id  # optional field
     )
@@ -196,6 +220,49 @@ async def _get_charger_connectors(charger: Charger, db: AsyncSession) -> list[Co
     return list(result.scalars().all())
 
 
+async def _open_charging_session(
+    db: AsyncSession,
+    charger: Charger,
+    connector: Connector,
+    started_by_user_id: int | None,
+) -> None:
+    session = ChargingSession(
+        station_id=charger.station_id,
+        charger_id=charger.charger_id,
+        connector_id=connector.connector_id,
+        started_by_user_id=started_by_user_id,
+        start_time=datetime.now(tz=timezone.utc),
+        end_time=None,
+    )
+    db.add(session)
+
+
+async def _close_active_charging_session(
+    db: AsyncSession,
+    connector_id: int,
+    invoice: Optional[dict] = None,
+) -> None:
+    result = await db.execute(
+        select(ChargingSession)
+        .where(
+            ChargingSession.connector_id == connector_id,
+            ChargingSession.end_time.is_(None),
+        )
+        .order_by(desc(ChargingSession.start_time))
+    )
+    active_sessions = result.scalars().all()
+    close_time = datetime.now(tz=timezone.utc)
+    for active_session in active_sessions:
+        active_session.end_time = close_time
+        if invoice:
+            active_session.invoice_id = invoice.get("invoice_id")
+            active_session.invoice_issued_at = invoice.get("issued_at")
+            active_session.invoice_currency = invoice.get("currency")
+            active_session.invoice_total_energy_kwh = invoice.get("total_energy_kwh")
+            active_session.invoice_price_per_kwh = invoice.get("price_per_kwh")
+            active_session.invoice_total_amount = invoice.get("total_amount")
+
+
 async def _reserve_connector(
     charger: Charger,
     db: AsyncSession,
@@ -258,6 +325,7 @@ async def _release_reserved_connector(
     connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
+    await _close_active_charging_session(db, connector.connector_id)
 
     await close_active_connector_reservations(db, connector.connector_id, release_status)
 
@@ -420,6 +488,8 @@ async def start_charging_by_manager(
     connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
+    await _close_active_charging_session(db, connector.connector_id)
+    await _open_charging_session(db, charger, connector, current_manager.user_id)
 
     connectors = await _get_charger_connectors(charger, db)
     _sync_charger_state_from_connectors(charger, connectors)
@@ -491,7 +561,15 @@ async def stop_charging_by_manager(
         _,
     ) = await _get_live_or_computed_meter_values(charger, connector)
 
-    total_amount = round(energy_kwh * DEFAULT_PRICE_PER_KWH, 2)
+    price_per_kwh = float(charger.price_per_kwh) if charger.price_per_kwh is not None else DEFAULT_PRICE_PER_KWH
+    total_amount = round(energy_kwh * price_per_kwh, 2)
+    invoice = _build_charging_invoice(
+        charger=charger,
+        connector=connector,
+        energy_kwh=energy_kwh,
+        price_per_kwh=price_per_kwh,
+        total_amount=total_amount,
+    )
 
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
@@ -501,6 +579,7 @@ async def stop_charging_by_manager(
     connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
+    await _close_active_charging_session(db, connector.connector_id, invoice=invoice)
 
     connectors = await _get_charger_connectors(charger, db)
     _sync_charger_state_from_connectors(charger, connectors)
@@ -516,9 +595,10 @@ async def stop_charging_by_manager(
             f"Total amount: {DEFAULT_CURRENCY} {total_amount}"
         ),
         "total_energy_kwh": round(energy_kwh, 3),
-        "price_per_kwh": DEFAULT_PRICE_PER_KWH,
+        "price_per_kwh": price_per_kwh,
         "total_amount": total_amount,
         "currency": DEFAULT_CURRENCY,
+        "invoice": invoice,
     }
 
 async def get_meter_values_by_manager(
@@ -546,6 +626,9 @@ async def get_meter_values_by_manager(
         timestamp,
     ) = await _get_live_or_computed_meter_values(charger, connector)
 
+    price_per_kwh = float(charger.price_per_kwh) if charger.price_per_kwh is not None else DEFAULT_PRICE_PER_KWH
+    running_amount = round(energy_kwh * price_per_kwh, 2)
+
     return ChargerMeterValues(
         charger_id=charger.charger_id,
         connector_id=connector.connector_id,
@@ -561,6 +644,9 @@ async def get_meter_values_by_manager(
         frequency_hz=frequency_hz,
         energy_kwh=energy_kwh,
         reactive_energy_kvarh=reactive_energy_kvarh,
+        price_per_kwh=price_per_kwh,
+        running_amount=running_amount,
+        currency=DEFAULT_CURRENCY,
         temperature_c=temperature_c,
         soc_percent=soc_percent,
         timestamp=timestamp,
@@ -632,6 +718,8 @@ async def start_charging_by_staff(
     connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
+    await _close_active_charging_session(db, connector.connector_id)
+    await _open_charging_session(db, charger, connector, current_staff.user_id)
 
     connectors = await _get_charger_connectors(charger, db)
     _sync_charger_state_from_connectors(charger, connectors)
@@ -674,7 +762,15 @@ async def stop_charging_by_staff(
         _,
     ) = await _get_live_or_computed_meter_values(charger, connector)
 
-    total_amount = round(energy_kwh * DEFAULT_PRICE_PER_KWH, 2)
+    price_per_kwh = float(charger.price_per_kwh) if charger.price_per_kwh is not None else DEFAULT_PRICE_PER_KWH
+    total_amount = round(energy_kwh * price_per_kwh, 2)
+    invoice = _build_charging_invoice(
+        charger=charger,
+        connector=connector,
+        energy_kwh=energy_kwh,
+        price_per_kwh=price_per_kwh,
+        total_amount=total_amount,
+    )
 
     connector.status = ChargerStatus.AVAILABLE
     connector.current_transaction_id = None
@@ -684,6 +780,7 @@ async def stop_charging_by_staff(
     connector.reserved_by_phone_number = None
     connector.reserved_at = None
     connector.last_status_change = datetime.now(tz=timezone.utc)
+    await _close_active_charging_session(db, connector.connector_id)
 
     connectors = await _get_charger_connectors(charger, db)
     _sync_charger_state_from_connectors(charger, connectors)
@@ -699,9 +796,10 @@ async def stop_charging_by_staff(
             f"Total amount: {DEFAULT_CURRENCY} {total_amount}"
         ),
         "total_energy_kwh": round(energy_kwh, 3),
-        "price_per_kwh": DEFAULT_PRICE_PER_KWH,
+        "price_per_kwh": price_per_kwh,
         "total_amount": total_amount,
         "currency": DEFAULT_CURRENCY,
+        "invoice": invoice,
     }
 
 
@@ -730,6 +828,9 @@ async def get_meter_values_by_staff(
         timestamp,
     ) = await _get_live_or_computed_meter_values(charger, connector)
 
+    price_per_kwh = float(charger.price_per_kwh) if charger.price_per_kwh is not None else DEFAULT_PRICE_PER_KWH
+    running_amount = round(energy_kwh * price_per_kwh, 2)
+
     return ChargerMeterValues(
         charger_id=charger.charger_id,
         connector_id=connector.connector_id,
@@ -745,6 +846,9 @@ async def get_meter_values_by_staff(
         frequency_hz=frequency_hz,
         energy_kwh=energy_kwh,
         reactive_energy_kvarh=reactive_energy_kvarh,
+        price_per_kwh=price_per_kwh,
+        running_amount=running_amount,
+        currency=DEFAULT_CURRENCY,
         temperature_c=temperature_c,
         soc_percent=soc_percent,
         timestamp=timestamp,
@@ -855,6 +959,46 @@ async def get_reservations_by_staff(
     return await _get_station_reservations(current_staff.station_id, db)
 
 
+async def get_charging_sessions_by_manager(
+    current_manager: User,
+    db: AsyncSession,
+) -> list[dict]:
+    station_result = await db.execute(
+        select(Station).where(Station.manager_id == current_manager.user_id)
+    )
+    station = station_result.scalar_one_or_none()
+
+    if not station:
+        return []
+
+    result = await db.execute(
+        select(
+            ChargingSession.session_id,
+            ChargingSession.station_id,
+            ChargingSession.charger_id,
+            Charger.name.label("charger_name"),
+            ChargingSession.connector_id,
+            Connector.connector_number,
+            ChargingSession.start_time,
+            ChargingSession.end_time,
+            ChargingSession.started_by_user_id,
+            ChargingSession.invoice_id,
+            ChargingSession.invoice_issued_at,
+            ChargingSession.invoice_currency,
+            ChargingSession.invoice_total_energy_kwh,
+            ChargingSession.invoice_price_per_kwh,
+            ChargingSession.invoice_total_amount,
+        )
+        .join(Charger, Charger.charger_id == ChargingSession.charger_id)
+        .join(Connector, Connector.connector_id == ChargingSession.connector_id)
+        .where(ChargingSession.station_id == station.station_id)
+        .order_by(ChargingSession.start_time.desc())
+    )
+
+    rows = result.mappings().all()
+    return [dict(row) for row in rows]
+
+
 async def edit_charger_by_manager(
     charger_id: int,
     data: ChargerCreate,
@@ -868,12 +1012,30 @@ async def edit_charger_by_manager(
         charger.name = data.name
     if data.type:
         charger.type = data.type
+    if data.price_per_kwh is not None:
+        charger.price_per_kwh = data.price_per_kwh
     if data.max_power_kw:
         charger.max_power_kw = data.max_power_kw
     if data.status:
         charger.status = data.status
     if data.current_transaction_id is not None:
         charger.current_transaction_id = data.current_transaction_id
+
+    await db.commit()
+    await db.refresh(charger)
+    await db.refresh(charger, attribute_names=["connectors"])
+
+    return charger
+
+
+async def update_charger_pricing_by_manager(
+    charger_id: int,
+    data: ChargerPricingUpdate,
+    current_manager: User,
+    db: AsyncSession,
+):
+    charger = await _get_manager_charger(charger_id, current_manager, db)
+    charger.price_per_kwh = data.price_per_kwh
 
     await db.commit()
     await db.refresh(charger)
