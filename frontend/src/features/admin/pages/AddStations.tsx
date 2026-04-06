@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   type CreateManagerStationSchema,
+  type CreateManagerStationSchemaInput,
   createManagerStationSchema,
 } from "@/lib/schema/CreateManagerStationSchema";
 import { useForm } from "react-hook-form";
@@ -19,24 +20,26 @@ export default function CreateManagerStation() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CreateManagerStationSchema>({
-    resolver: zodResolver(createManagerStationSchema),
-    defaultValues: {
-      manager: {
-        user_name: "",
-        email: "",
-        password: "",
-        phone_number: "",
-      },
-      station: {
-        station_name: "",
-        address: "",
-        longitude: 0,
-        latitude: 0,
-        total_charger: 0,
+  } = useForm<CreateManagerStationSchemaInput, any, CreateManagerStationSchema>(
+    {
+      resolver: zodResolver(createManagerStationSchema),
+      defaultValues: {
+        manager: {
+          user_name: "",
+          email: "",
+          password: "",
+          phone_number: "",
+        },
+        station: {
+          station_name: "",
+          address: "",
+          longitude: 0,
+          latitude: 0,
+          total_charger: 0,
+        },
       },
     },
-  });
+  );
 
   const onSubmit = async (data: CreateManagerStationSchema) => {
     try {
@@ -51,20 +54,19 @@ export default function CreateManagerStation() {
 
   return (
     <main className="container mx-auto mt-5 max-w-lg ">
-
       {/* ── Header ── */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           Create Manager & Station
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Fill in the details below to register a new manager and charging station.
+          Fill in the details below to register a new manager and charging
+          station.
         </p>
       </div>
 
       {/* ── Form ── */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-
         {/* ── Manager Section ── */}
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2">
@@ -80,7 +82,9 @@ export default function CreateManagerStation() {
               {...register("manager.user_name")}
             />
             {errors.manager?.user_name && (
-              <p className="text-sm text-red-500">{errors.manager.user_name.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.manager.user_name.message}
+              </p>
             )}
           </Field>
 
@@ -93,7 +97,9 @@ export default function CreateManagerStation() {
               {...register("manager.email")}
             />
             {errors.manager?.email && (
-              <p className="text-sm text-red-500">{errors.manager.email.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.manager.email.message}
+              </p>
             )}
           </Field>
 
@@ -117,20 +123,26 @@ export default function CreateManagerStation() {
               </button>
             </div>
             {errors.manager?.password && (
-              <p className="text-sm text-red-500">{errors.manager.password.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.manager.password.message}
+              </p>
             )}
           </Field>
 
           {/* Phone Number */}
           <Field className="gap-2">
-            <FieldLabel className="text-base font-medium">Phone Number</FieldLabel>
+            <FieldLabel className="text-base font-medium">
+              Phone Number
+            </FieldLabel>
             <Input
               className="h-10 border border-[#B6B6B6]"
               placeholder="e.g. 9800000000"
               {...register("manager.phone_number")}
             />
             {errors.manager?.phone_number && (
-              <p className="text-sm text-red-500">{errors.manager.phone_number.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.manager.phone_number.message}
+              </p>
             )}
           </Field>
         </div>
@@ -143,14 +155,18 @@ export default function CreateManagerStation() {
 
           {/* Station Name */}
           <Field className="gap-2">
-            <FieldLabel className="text-base font-medium">Station Name</FieldLabel>
+            <FieldLabel className="text-base font-medium">
+              Station Name
+            </FieldLabel>
             <Input
               className="h-10 border border-[#B6B6B6]"
               placeholder="e.g. Downtown EV Hub"
               {...register("station.station_name")}
             />
             {errors.station?.station_name && (
-              <p className="text-sm text-red-500">{errors.station.station_name.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.station.station_name.message}
+              </p>
             )}
           </Field>
 
@@ -163,14 +179,18 @@ export default function CreateManagerStation() {
               {...register("station.address")}
             />
             {errors.station?.address && (
-              <p className="text-sm text-red-500">{errors.station.address.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.station.address.message}
+              </p>
             )}
           </Field>
 
           {/* Longitude & Latitude */}
           <div className="grid grid-cols-2 gap-4">
             <Field className="gap-2">
-              <FieldLabel className="text-base font-medium">Longitude</FieldLabel>
+              <FieldLabel className="text-base font-medium">
+                Longitude
+              </FieldLabel>
               <Input
                 className="h-10 border border-[#B6B6B6]"
                 type="number"
@@ -179,12 +199,16 @@ export default function CreateManagerStation() {
                 {...register("station.longitude", { valueAsNumber: true })}
               />
               {errors.station?.longitude && (
-                <p className="text-sm text-red-500">{errors.station.longitude.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.station.longitude.message}
+                </p>
               )}
             </Field>
 
             <Field className="gap-2">
-              <FieldLabel className="text-base font-medium">Latitude</FieldLabel>
+              <FieldLabel className="text-base font-medium">
+                Latitude
+              </FieldLabel>
               <Input
                 className="h-10 border border-[#B6B6B6]"
                 type="number"
@@ -193,14 +217,18 @@ export default function CreateManagerStation() {
                 {...register("station.latitude", { valueAsNumber: true })}
               />
               {errors.station?.latitude && (
-                <p className="text-sm text-red-500">{errors.station.latitude.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.station.latitude.message}
+                </p>
               )}
             </Field>
           </div>
 
           {/* Total Chargers */}
           <Field className="gap-2">
-            <FieldLabel className="text-base font-medium">Total Chargers</FieldLabel>
+            <FieldLabel className="text-base font-medium">
+              Total Chargers
+            </FieldLabel>
             <Input
               className="h-10 border border-[#B6B6B6]"
               type="number"
@@ -208,7 +236,9 @@ export default function CreateManagerStation() {
               {...register("station.total_charger", { valueAsNumber: true })}
             />
             {errors.station?.total_charger && (
-              <p className="text-sm text-red-500">{errors.station.total_charger.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.station.total_charger.message}
+              </p>
             )}
           </Field>
         </div>
@@ -221,11 +251,7 @@ export default function CreateManagerStation() {
         >
           {isSubmitting ? "Creating..." : "Create Manager & Station"}
         </Button>
-
       </form>
-
-   
-
     </main>
   );
 }

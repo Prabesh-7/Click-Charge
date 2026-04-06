@@ -29,4 +29,5 @@ export const createManagerStationSchema = z.object({
   station: stationSchema,
 });
 
+export type CreateManagerStationSchemaInput = z.input<typeof createManagerStationSchema>;
 export type CreateManagerStationSchema = z.infer<typeof createManagerStationSchema>;
