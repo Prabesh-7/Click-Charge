@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { getMyChargers, getMyStation, type ManagerStation } from "@/api/managerApi";
+import {
+  getManagerWallet,
+  getMyChargers,
+  getMyStation,
+  type ManagerStation,
+} from "@/api/managerApi";
 
 export default function ManagerDashboard() {
   const [totalChargers, setTotalChargers] = useState(0);
+  const [totalBalance, setTotalBalance] = useState(0);
   const [station, setStation] = useState<ManagerStation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,12 +17,14 @@ export default function ManagerDashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [chargersData, stationData] = await Promise.all([
+        const [chargersData, stationData, walletData] = await Promise.all([
           getMyChargers(),
           getMyStation(),
+          getManagerWallet(),
         ]);
         setTotalChargers(chargersData.length);
         setStation(stationData);
+        setTotalBalance(Number(walletData.balance || 0));
         setError(null);
       } catch (err: any) {
         console.error(
@@ -57,10 +65,19 @@ export default function ManagerDashboard() {
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
             <p className="text-sm text-gray-500">Total Chargers</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{totalChargers}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2">
+              {totalChargers}
+            </p>
+          </div>
+
+          <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-sm text-gray-500">Total Balance</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2">
+              Rs {totalBalance.toFixed(2)}
+            </p>
           </div>
 
           <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
@@ -68,7 +85,9 @@ export default function ManagerDashboard() {
             <p className="text-lg font-semibold text-gray-900 mt-2">
               {station?.station_name || "-"}
             </p>
-            <p className="text-sm text-gray-600 mt-1">{station?.address || "-"}</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {station?.address || "-"}
+            </p>
           </div>
         </div>
       )}

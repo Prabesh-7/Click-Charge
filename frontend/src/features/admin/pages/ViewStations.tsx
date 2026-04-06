@@ -6,7 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   stationUpdateSchema,
-  type StationUpdateSchema,
+  type StationUpdateFormValues,
+  type StationUpdateSubmitValues,
 } from "@/lib/schema/StationUpdateSchema";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ export default function ViewStations() {
     formState: { errors },
     reset,
     setValue,
-  } = useForm<StationUpdateSchema>({
+  } = useForm<StationUpdateFormValues, unknown, StationUpdateSubmitValues>({
     resolver: zodResolver(stationUpdateSchema),
   });
 
@@ -80,7 +81,7 @@ export default function ViewStations() {
     reset();
   };
 
-  const onSubmit = async (data: StationUpdateSchema) => {
+  const onSubmit = async (data: StationUpdateSubmitValues) => {
     if (!editingStation) return;
 
     try {

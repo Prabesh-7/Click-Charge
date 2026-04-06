@@ -1,6 +1,6 @@
 import api from "./axiosInstance";
 import { type CreateManagerStationSchema} from "@/lib/schema/CreateManagerStationSchema";
-import { type StationUpdateSchema } from "@/lib/schema/StationUpdateSchema";
+import { type StationUpdateSubmitValues } from "@/lib/schema/StationUpdateSchema";
 
 const authHeader = () => {
   const token = localStorage.getItem("access_token");
@@ -30,7 +30,7 @@ export const getStations = async () => {
   return response.data;
 };
 
-export const updateStation = async (stationId: number, data: StationUpdateSchema) => {
+export const updateStation = async (stationId: number, data: StationUpdateSubmitValues) => {
   const response = await api.put(
     `/admin/stations/${stationId}`,
     {

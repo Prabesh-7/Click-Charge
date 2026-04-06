@@ -9,6 +9,7 @@ from app.schemas.charging_session import ChargingSessionOut
 from app.schemas.reservation import ReservationOut
 from app.schemas.slot import SlotCreate, SlotOut, SlotUpdate
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
+from app.schemas.wallet import WalletOut
 from app.schemas.userValidation import UserCreate, UserOut
 from app.services.charger_service import (
     add_charger_by_manager,
@@ -40,6 +41,7 @@ from app.services.slot_service import (
     delete_slot_by_manager,
     release_slot_reservation_by_manager,
 )
+from app.services.wallet_service import get_wallet_by_user
 from app.utils.dependencies import require_manager
 from typing import List
 
@@ -76,6 +78,20 @@ async def get_my_station(
     Get station details for the current manager.
     """
     return await get_manager_station_details(current_manager, db)
+
+
+@router.get("/wallet", response_model=WalletOut)
+async def get_manager_wallet(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    wallet = await get_wallet_by_user(current_manager, db)
+    return {
+        "wallet_id": wallet.wallet_id,
+        "user_id": wallet.user_id,
+        "balance": float(wallet.balance),
+        "updated_at": wallet.updated_at,
+    }
 
 
 @router.put("/my-station", response_model=StationOut)

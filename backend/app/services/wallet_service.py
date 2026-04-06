@@ -34,7 +34,7 @@ ESEWA_SECRET = os.getenv("ESEWA_SECRET", "8gBm/:&EnhH.1/q")
 ESEWA_FORM_URL = os.getenv("ESEWA_FORM_URL", "https://rc-epay.esewa.com.np/api/epay/main/v2/form")
 ESEWA_STATUS_URL = os.getenv("ESEWA_STATUS_URL", "https://rc.esewa.com.np/api/epay/transaction/status/")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
-SLOT_RESERVATION_FEE = Decimal("0.00")
+SLOT_RESERVATION_FEE = Decimal("50")
 
 
 def _to_money(value: Decimal | float | int | str) -> Decimal:
@@ -299,6 +299,36 @@ async def debit_wallet(
     return _to_money(wallet.balance)
 
 
+async def _credit_wallet_by_user_id(
+    db: AsyncSession,
+    user_id: int,
+    amount: Decimal,
+    source: WalletTransactionSource,
+    description: str,
+    reference: str | None = None,
+) -> Decimal:
+    normalized_amount = _to_money(amount)
+    if normalized_amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+
+    wallet = await _get_or_create_wallet(db, user_id, lock=True)
+    wallet.balance = _to_money(wallet.balance) + normalized_amount
+
+    transaction = WalletTransaction(
+        wallet_id=wallet.wallet_id,
+        user_id=user_id,
+        transaction_type=WalletTransactionType.CREDIT,
+        source=source,
+        amount=normalized_amount,
+        balance_after=wallet.balance,
+        reference=reference,
+        description=description,
+    )
+    db.add(transaction)
+
+    return _to_money(wallet.balance)
+
+
 async def pay_from_wallet(
     payload: WalletPayRequest,
     current_user: User,
@@ -325,12 +355,13 @@ async def debit_wallet_for_slot_reservation(
     current_user: User,
     db: AsyncSession,
     slot_id: int,
+    manager_user_id: int | None = None,
 ) -> Decimal:
     if SLOT_RESERVATION_FEE <= Decimal("0"):
         wallet = await _get_or_create_wallet(db, current_user.user_id)
         return _to_money(wallet.balance)
 
-    return await debit_wallet(
+    user_balance = await debit_wallet(
         current_user=current_user,
         db=db,
         amount=SLOT_RESERVATION_FEE,
@@ -338,3 +369,15 @@ async def debit_wallet_for_slot_reservation(
         description=f"Slot reservation payment for slot {slot_id}",
         reference=f"slot-{slot_id}",
     )
+
+    if manager_user_id and manager_user_id != current_user.user_id:
+        await _credit_wallet_by_user_id(
+            db=db,
+            user_id=manager_user_id,
+            amount=SLOT_RESERVATION_FEE,
+            source=WalletTransactionSource.SLOT_RESERVATION,
+            description=f"Reservation income for slot {slot_id}",
+            reference=f"slot-{slot_id}",
+        )
+
+    return user_balance

@@ -98,6 +98,14 @@ export default function StationSlots() {
   }, [stationIdNum]);
 
   const handleReserve = async (slotId: number) => {
+    const confirmed = window.confirm(
+      "Reserving this slot will deduct Rs 50.00 from your wallet. Do you want to continue?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
       setActionLoadingSlotId(slotId);
       setError(null);

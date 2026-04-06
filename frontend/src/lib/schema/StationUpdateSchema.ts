@@ -11,4 +11,6 @@ export const stationUpdateSchema = z.object({
     .min(1, "At least 1 charger is required"),
 });
 
-export type StationUpdateSchema = z.infer<typeof stationUpdateSchema>;
+export type StationUpdateFormValues = z.input<typeof stationUpdateSchema>;
+export type StationUpdateSubmitValues = z.output<typeof stationUpdateSchema>;
+export type StationUpdateSchema = StationUpdateSubmitValues;

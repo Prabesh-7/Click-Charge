@@ -15,7 +15,6 @@ from app.services.reservation_service import (
 from app.services.wallet_service import debit_wallet_for_slot_reservation, SLOT_RESERVATION_FEE
 
 
-# Practical balancing policy for walk-in users and app reservations.
 MIN_SLOT_DURATION_MINUTES = 20
 MAX_SLOT_DURATION_MINUTES = 180
 MIN_RESERVATION_LEAD_MINUTES = 15
@@ -467,10 +466,19 @@ async def reserve_slot_by_user(
     slot.reserved_by_phone_number = current_user.phone_number
     slot.reserved_at = now
 
+    manager_result = await db.execute(
+        select(Station.manager_id)
+        .join(Charger, Charger.station_id == Station.station_id)
+        .join(Connector, Connector.charger_id == Charger.charger_id)
+        .where(Connector.connector_id == slot.connector_id)
+    )
+    manager_user_id = manager_result.scalar_one_or_none()
+
     balance_after_payment = await debit_wallet_for_slot_reservation(
         current_user=current_user,
         db=db,
         slot_id=slot.slot_id,
+        manager_user_id=manager_user_id,
     )
 
     await create_slot_reservation_record(db, slot, current_user, now)

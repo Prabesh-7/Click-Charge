@@ -47,6 +47,13 @@ export interface ManagerStation {
   created_at: string;
 }
 
+export interface ManagerWallet {
+  wallet_id: number;
+  user_id: number;
+  balance: number;
+  updated_at: string;
+}
+
 export interface ManagerStationUpdate {
   station_description?: string;
   phone_number?: string;
@@ -193,6 +200,13 @@ export const getMyStation = async () => {
   );
 
   return response.data;
+};
+
+export const getManagerWallet = async (): Promise<ManagerWallet> => {
+  const response = await api.get("/manager/wallet", {
+    headers: authHeader(),
+  });
+  return response.data as ManagerWallet;
 };
 
 export const updateMyStation = async (data: ManagerStationUpdate) => {
