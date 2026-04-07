@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   type CreateManagerStationSchema,
-  type CreateManagerStationSchemaInput,
   createManagerStationSchema,
 } from "@/lib/schema/CreateManagerStationSchema";
 import { useForm } from "react-hook-form";
@@ -20,26 +19,24 @@ export default function CreateManagerStation() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<CreateManagerStationSchemaInput, any, CreateManagerStationSchema>(
-    {
-      resolver: zodResolver(createManagerStationSchema),
-      defaultValues: {
-        manager: {
-          user_name: "",
-          email: "",
-          password: "",
-          phone_number: "",
-        },
-        station: {
-          station_name: "",
-          address: "",
-          longitude: 0,
-          latitude: 0,
-          total_charger: 0,
-        },
+  } = useForm<CreateManagerStationSchema>({
+    resolver: zodResolver(createManagerStationSchema),
+    defaultValues: {
+      manager: {
+        user_name: "",
+        email: "",
+        password: "",
+        phone_number: "",
+      },
+      station: {
+        station_name: "",
+        address: "",
+        longitude: 0,
+        latitude: 0,
+        total_charger: 1,
       },
     },
-  );
+  });
 
   const onSubmit = async (data: CreateManagerStationSchema) => {
     try {
@@ -224,23 +221,10 @@ export default function CreateManagerStation() {
             </Field>
           </div>
 
-          {/* Total Chargers */}
-          <Field className="gap-2">
-            <FieldLabel className="text-base font-medium">
-              Total Chargers
-            </FieldLabel>
-            <Input
-              className="h-10 border border-[#B6B6B6]"
-              type="number"
-              placeholder="e.g. 10"
-              {...register("station.total_charger", { valueAsNumber: true })}
-            />
-            {errors.station?.total_charger && (
-              <p className="text-sm text-red-500">
-                {errors.station.total_charger.message}
-              </p>
-            )}
-          </Field>
+          <input
+            type="hidden"
+            {...register("station.total_charger", { valueAsNumber: true })}
+          />
         </div>
 
         {/* Submit */}

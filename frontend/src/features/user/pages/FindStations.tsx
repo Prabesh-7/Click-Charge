@@ -54,6 +54,60 @@ const getDistanceInKm = (from: Coordinates, to: Coordinates) => {
   return earthRadiusKm * c;
 };
 
+const getPlugTypeBadgeClasses = (plugType: string) => {
+  const normalizedType = plugType.trim().toUpperCase();
+
+  if (normalizedType === "CCS2") {
+    return {
+      wrapper: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      icon: "bg-emerald-600 text-white",
+    };
+  }
+
+  if (normalizedType === "CHADEMO") {
+    return {
+      wrapper: "border-sky-200 bg-sky-50 text-sky-700",
+      icon: "bg-sky-600 text-white",
+    };
+  }
+
+  if (normalizedType === "TYPE2") {
+    return {
+      wrapper: "border-amber-200 bg-amber-50 text-amber-700",
+      icon: "bg-amber-500 text-white",
+    };
+  }
+
+  if (normalizedType === "GBT") {
+    return {
+      wrapper: "border-violet-200 bg-violet-50 text-violet-700",
+      icon: "bg-violet-600 text-white",
+    };
+  }
+
+  return {
+    wrapper: "border-gray-200 bg-gray-50 text-gray-700",
+    icon: "bg-gray-600 text-white",
+  };
+};
+
+function PlugTypeBadge({ plugType }: { plugType: string }) {
+  const styles = getPlugTypeBadgeClasses(plugType);
+
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${styles.wrapper}`}
+    >
+      <span
+        className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${styles.icon}`}
+      >
+        <Plug size={16} strokeWidth={2.2} />
+      </span>
+      {plugType}
+    </span>
+  );
+}
+
 function SkeletonCard() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -352,6 +406,9 @@ export default function FindStations() {
             sortedStations.map((station) => {
               const distance = stationDistances.get(station.station_id);
               const isAvailable = station.available_connectors > 0;
+              const plugTypes = station.charger_types.filter((plugType) =>
+                Boolean(plugType?.trim()),
+              );
 
               const amenities = [
                 {
@@ -502,17 +559,32 @@ export default function FindStations() {
                     </div>
 
                     {/* Chargers Info */}
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-700">
-                        <Plug size={13} className="shrink-0 text-[#22C55E]" />
-                        <span className="font-medium">
-                          {station.charger_types[0] || "N/A"}
+                    <div className="mb-3 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                          <Plug size={14} className="shrink-0 text-[#22C55E]" />
+                          Plug Types
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-[#22C55E]/10 px-2 py-1 text-xs font-bold text-[#22C55E]">
+                          {station.available_connectors}/
+                          {station.total_connectors}
                         </span>
                       </div>
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-[#22C55E]/10 px-2 py-1 text-xs font-bold text-[#22C55E]">
-                        {station.available_connectors}/
-                        {station.total_connectors}
-                      </span>
+
+                      {plugTypes.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {plugTypes.map((plugType) => (
+                            <PlugTypeBadge
+                              key={`${station.station_id}-${plugType}`}
+                              plugType={plugType}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">
+                          Plug types not available.
+                        </p>
+                      )}
                     </div>
 
                     {/* Amenities Icons */}
@@ -655,13 +727,10 @@ export default function FindStations() {
                       {selectedStation.charger_types.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {selectedStation.charger_types.map((plugType) => (
-                            <span
-                              key={plugType}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-[#22C55E]/10 px-3 py-1 text-xs font-semibold text-[#22C55E]"
-                            >
-                              <Plug size={12} />
-                              {plugType}
-                            </span>
+                            <PlugTypeBadge
+                              key={`${selectedStation.station_id}-${plugType}`}
+                              plugType={plugType}
+                            />
                           ))}
                         </div>
                       ) : (
