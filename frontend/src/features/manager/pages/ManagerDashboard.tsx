@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import {
   getManagerWallet,
   getMyChargers,
@@ -46,8 +47,8 @@ export default function ManagerDashboard() {
   return (
     <main className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
+        <p className="text-sm text-gray-600 mt-2">
           Overview of your station and chargers.
         </p>
       </div>
@@ -59,33 +60,39 @@ export default function ManagerDashboard() {
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{error}</p>
+        <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <p className="text-sm text-gray-500">Total Chargers</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+              Total Chargers
+            </p>
+            <p className="text-3xl font-bold text-gray-900 mt-3">
               {totalChargers}
             </p>
           </div>
 
-          <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <p className="text-sm text-gray-500">Total Balance</p>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+              Total Balance
+            </p>
+            <p className="text-3xl font-bold text-gray-900 mt-3">
               Rs {totalBalance.toFixed(2)}
             </p>
           </div>
 
-          <div className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <p className="text-sm text-gray-500">Station</p>
-            <p className="text-lg font-semibold text-gray-900 mt-2">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+              Station
+            </p>
+            <p className="text-lg font-semibold text-gray-900 mt-3">
               {station?.station_name || "-"}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-xs text-gray-600 mt-2">
               {station?.address || "-"}
             </p>
           </div>

@@ -1,43 +1,163 @@
+import {
+  Activity,
+  Banknote,
+  Bell,
+  Building2,
+  LayoutDashboard,
+  ListChecks,
+  MapPinned,
+  Package,
+  ReceiptText,
+  Settings2,
+  SlidersHorizontal,
+  Sparkles,
+  Users,
+  Wallet,
+  Wrench,
+} from "lucide-react";
+
+import type { LucideIcon } from "lucide-react";
+
 type MenuItem = {
   label: string;
   path: string;
+  icon: LucideIcon;
+  section: string;
 };
 
 export type Role = "user" | "admin" | "staff" | "manager";
 
 const sidebarMenu: Record<Role, MenuItem[]> = {
   user: [
-    { label: "Find Stations", path: "/user/stations" },
-    { label: "Charger Availability", path: "/user/availability" },
-    { label: "Wallet", path: "/user/wallet" },
-    { label: "Add Balance", path: "/user/wallet" },
+    {
+      label: "Find Stations",
+      path: "/user/stations",
+      icon: MapPinned,
+      section: "Explore",
+    },
+    {
+      label: "Charger Availability",
+      path: "/user/availability",
+      icon: Activity,
+      section: "Explore",
+    },
+    {
+      label: "Wallet",
+      path: "/user/wallet",
+      icon: Wallet,
+      section: "Payments",
+    },
+    {
+      label: "Add Balance",
+      path: "/user/wallet",
+      icon: Banknote,
+      section: "Payments",
+    },
   ],
 
   admin: [
-    { label: "Dashboard", path: "/admin/dashboard" },
-    { label: "Stations", path: "/admin/stations" },
-    { label: "Add Stations", path: "/admin/addStation" },
+    {
+      label: "Dashboard",
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+      section: "Overview",
+    },
+    {
+      label: "Stations",
+      path: "/admin/stations",
+      icon: Building2,
+      section: "Management",
+    },
+    {
+      label: "Add Stations",
+      path: "/admin/addStation",
+      icon: Sparkles,
+      section: "Management",
+    },
   ],
 
   staff: [
-    { label: "Dashboard", path: "/staff/dashboard" },
-    { label: "My Chargers", path: "/staff/myChargers" },
-    { label: "Charger Control", path: "/staff/chargerControl" },
+    {
+      label: "Dashboard",
+      path: "/staff/dashboard",
+      icon: LayoutDashboard,
+      section: "Overview",
+    },
+    {
+      label: "My Chargers",
+      path: "/staff/myChargers",
+      icon: Package,
+      section: "Operations",
+    },
+    {
+      label: "Charger Control",
+      path: "/staff/chargerControl",
+      icon: Wrench,
+      section: "Operations",
+    },
   ],
 
   manager: [
-    { label: "Dashboard", path: "/manager/dashboard" },
-    { label: "Station Details", path: "/manager/stationDetails" },
-    { label: "My Chargers", path: "/manager/myChargers" },
-    { label: "Pricing", path: "/manager/pricing" },
-    { label: "Charging Sessions", path: "/manager/chargingSessions" },
-    { label: "Manage Slots", path: "/manager/manageSlots" },
-    { label: "Slot List", path: "/manager/slotList" },
-    { label: "Reservations", path: "/manager/reservations" },
-    { label: "My Staff", path: "/manager/myStaff" },
-    { label: "Charger Control", path: "/manager/chargerControl" },
-    { label: "Add Charger", path: "/manager/addCharger" },
-    { label: "Add Staff", path: "/manager/addStaff" },
+    {
+      label: "Dashboard",
+      path: "/manager/dashboard",
+      icon: LayoutDashboard,
+      section: "Overview",
+    },
+    {
+      label: "Station Details",
+      path: "/manager/stationDetails",
+      icon: MapPinned,
+      section: "Stations",
+    },
+    {
+      label: "My Chargers",
+      path: "/manager/myChargers",
+      icon: Package,
+      section: "Charger",
+    },
+    {
+      label: "Pricing",
+      path: "/manager/pricing",
+      icon: SlidersHorizontal,
+      section: "Stations",
+    },
+    {
+      label: "Charging Sessions",
+      path: "/manager/chargingSessions",
+      icon: ReceiptText,
+      section: "Charger",
+    },
+    {
+      label: "Manage Slots",
+      path: "/manager/manageSlots",
+      icon: ListChecks,
+      section: "Stations",
+    },
+    {
+      label: "Slot List",
+      path: "/manager/slotList",
+      icon: Bell,
+      section: "Stations",
+    },
+    {
+      label: "Reservations",
+      path: "/manager/reservations",
+      icon: Settings2,
+      section: "Stations",
+    },
+    {
+      label: "My Staff",
+      path: "/manager/myStaff",
+      icon: Users,
+      section: "Team",
+    },
+    {
+      label: "Charger Control",
+      path: "/manager/chargerControl",
+      icon: Wrench,
+      section: "Charger",
+    },
   ],
 };
 

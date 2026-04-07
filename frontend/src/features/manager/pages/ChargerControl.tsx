@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMyChargers, startCharging } from "@/api/managerApi";
 import { BatteryCharging, Plug, Zap } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 
 type Charger = {
@@ -25,6 +18,8 @@ type Charger = {
   }[];
 };
 
+const formatStatus = (status: string) => status.replace(/_/g, " ");
+
 export default function ChargerControl() {
   const navigate = useNavigate();
   const [chargers, setChargers] = useState<Charger[]>([]);
@@ -38,7 +33,6 @@ export default function ChargerControl() {
   const [selectedConnectorId, setSelectedConnectorId] = useState<number | null>(
     null,
   );
-  const [isConnectorDialogOpen, setIsConnectorDialogOpen] = useState(false);
 
   const selectedCharger = useMemo(
     () =>
@@ -67,6 +61,17 @@ export default function ChargerControl() {
       ) || null,
     [chargerConnectors, selectedConnectorId],
   );
+
+  const selectedConnectorLabel = useMemo(() => {
+    for (const charger of chargers) {
+      for (const connector of charger.connectors) {
+        if (connector.connector_id === selectedConnectorId) {
+          return `${charger.name} - Connector ${connector.connector_number}`;
+        }
+      }
+    }
+    return "No connector selected";
+  }, [chargers, selectedConnectorId]);
 
   const fetchChargers = async () => {
     try {
@@ -131,7 +136,6 @@ export default function ChargerControl() {
         ),
       );
 
-      setIsConnectorDialogOpen(false);
       navigate("/manager/chargerControl/live-session", {
         state: {
           chargerId: selectedCharger.charger_id,
@@ -150,33 +154,38 @@ export default function ChargerControl() {
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-8 md:py-10">
-      <div className="mx-auto max-w-5xl space-y-5">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="text-2xl font-semibold text-slate-900">
-              Charger Control
-            </h1>
+      <div className="mx-auto max-w-6xl space-y-5">
+        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Charger Control
+              </h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Select a connector and start charging directly from the card.
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => navigate("/manager/chargerControl/live-session")}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               View Live Sessions
             </button>
           </div>
-          <p className="mt-1.5 text-sm text-slate-600">
-            Select a charger to view connectors, then start charging.
+          <p className="mt-2 text-xs text-gray-500">
+            Active connector: {selectedConnectorLabel}
           </p>
         </section>
 
         {loading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">
+          <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500 shadow-sm">
             Loading chargers...
           </div>
         )}
 
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
             {error}
           </div>
         )}
@@ -194,18 +203,31 @@ export default function ChargerControl() {
 
         {!loading && !error && chargers.length > 0 && (
           <section>
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">
-              My Chargers
-            </h2>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  My Chargers
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Choose one available connector, then start charging.
+                </p>
+              </div>
+              <div className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+                Selected: {selectedConnectorLabel}
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               {chargers.map((charger) => {
-                const availableCount = (charger.connectors || []).filter(
+                const availableCount = charger.connectors.filter(
                   (connector) => connector.status === "AVAILABLE",
                 ).length;
-                const chargingCount = (charger.connectors || []).filter(
+                const chargingCount = charger.connectors.filter(
                   (connector) => connector.status === "IN_CHARGING",
                 ).length;
-                const totalConnectors = charger.connectors?.length || 0;
+                const totalConnectors = charger.connectors.length;
+                const selectedForThisCharger =
+                  selectedChargerId === charger.charger_id;
 
                 const statusClass =
                   availableCount > 0
@@ -222,69 +244,59 @@ export default function ChargerControl() {
                       : `0/${totalConnectors} Available`;
 
                 return (
-                  <button
+                  <article
                     key={charger.charger_id}
-                    type="button"
-                    onClick={() => {
-                      const availableForCharger = (
-                        charger.connectors || []
-                      ).filter((connector) => connector.status === "AVAILABLE");
-                      setSelectedChargerId(charger.charger_id);
-                      setSelectedConnectorId(
-                        availableForCharger[0]?.connector_id ?? null,
-                      );
-                      setIsConnectorDialogOpen(true);
-                    }}
-                    className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-all duration-200 hover:shadow-lg"
+                    className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm"
                   >
-                    <div className="border-b border-gray-100 p-4">
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="truncate text-base font-bold text-gray-900">
-                            {charger.name}
-                          </h3>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Charge Point:{" "}
-                            <span className="font-semibold text-gray-700">
-                              {charger.charge_point_id}
-                            </span>
-                          </p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Tariff:{" "}
-                            <span className="font-semibold text-gray-700">
-                              Rs {Number(charger.price_per_kwh ?? 0).toFixed(2)}
-                              /kWh
-                            </span>
-                          </p>
-                        </div>
-                        <span
-                          className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
-                        >
-                          {statusLabel}
-                        </span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-base font-bold text-gray-900">
+                          {charger.name}
+                        </h3>
+                        <p className="mt-1 text-xs text-gray-600">
+                          {charger.type} | {charger.max_power_kw} kW
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Charge Point:{" "}
+                          <span className="font-semibold text-gray-700">
+                            {charger.charge_point_id}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Tariff:{" "}
+                          <span className="font-semibold text-gray-700">
+                            Rs {Number(charger.price_per_kwh ?? 0).toFixed(2)}
+                            /kWh
+                          </span>
+                        </p>
                       </div>
+                      <span
+                        className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
+                      >
+                        {statusLabel}
+                      </span>
+                    </div>
 
-                      <div className="flex items-center gap-3">
-                        <BatteryCharging className="h-9 w-9 text-gray-400" />
-                        <div className="text-xs text-gray-500">
-                          <p>
-                            Type:{" "}
-                            <span className="font-semibold text-gray-800">
-                              {charger.type}
-                            </span>
-                          </p>
-                          <p>
-                            Max Power:{" "}
-                            <span className="font-semibold text-gray-800">
-                              {charger.max_power_kw} kW
-                            </span>
-                          </p>
-                        </div>
+                    <div className="mt-4 flex items-center gap-3">
+                      <BatteryCharging className="h-9 w-9 text-gray-400" />
+                      <div className="text-xs text-gray-500">
+                        <p>
+                          Type:{" "}
+                          <span className="font-semibold text-gray-800">
+                            {charger.type}
+                          </span>
+                        </p>
+                        <p>
+                          Max Power:{" "}
+                          <span className="font-semibold text-gray-800">
+                            {charger.max_power_kw} kW
+                          </span>
+                        </p>
                       </div>
                     </div>
 
-                    <div className="space-y-2 p-4">
-                      <div className="mb-1 flex items-center justify-between">
+                    <div className="mt-4 rounded-lg border border-gray-200 bg-white p-3">
+                      <div className="flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
                           Connectors
                         </p>
@@ -293,157 +305,74 @@ export default function ChargerControl() {
                         </span>
                       </div>
 
-                      {(charger.connectors || [])
-                        .slice(0, 3)
-                        .map((connector) => (
-                          <div
-                            key={connector.connector_id}
-                            className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2.5"
-                          >
-                            <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#22C55E] shadow-sm">
-                                <Plug size={15} />
-                              </span>
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-gray-900">
-                                  Connector {connector.connector_number}
-                                </p>
-                                <p className="truncate text-xs text-gray-500">
-                                  {connector.charge_point_id}
-                                </p>
-                              </div>
-                            </div>
-                            <span
-                              className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${
-                                connector.status === "AVAILABLE"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : connector.status === "IN_CHARGING"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-amber-100 text-amber-700"
+                      <div className="mt-3 space-y-2">
+                        {charger.connectors.map((connector) => {
+                          const isSelected =
+                            selectedConnectorId === connector.connector_id;
+                          const isSelectable = connector.status === "AVAILABLE";
+
+                          return (
+                            <label
+                              key={connector.connector_id}
+                              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 ${
+                                isSelected
+                                  ? "border-blue-300 bg-blue-50"
+                                  : "border-gray-200 bg-gray-50"
                               }`}
                             >
-                              {connector.status === "IN_CHARGING"
-                                ? "IN CHARGING"
-                                : connector.status.replace("_", " ")}
-                            </span>
-                          </div>
-                        ))}
+                              <div className="flex min-w-0 flex-1 items-start gap-3">
+                                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#22C55E] shadow-sm">
+                                  <Plug size={15} />
+                                </span>
+                                <input
+                                  type="radio"
+                                  name={`connector-select-${charger.charger_id}`}
+                                  checked={isSelected}
+                                  disabled={!isSelectable}
+                                  onChange={() => {
+                                    setSelectedChargerId(charger.charger_id);
+                                    setSelectedConnectorId(
+                                      connector.connector_id,
+                                    );
+                                  }}
+                                  className="mt-1 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    Connector {connector.connector_number}
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    {connector.charge_point_id}
+                                  </p>
+                                  <p className="mt-1 text-xs font-medium text-gray-500">
+                                    Status: {formatStatus(connector.status)}
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
 
-                      {totalConnectors > 3 && (
-                        <p className="text-xs font-medium text-gray-500">
-                          +{totalConnectors - 3} more connectors
-                        </p>
-                      )}
+                      <button
+                        type="button"
+                        className="mt-4 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                        disabled={
+                          actionLoading ||
+                          !selectedForThisCharger ||
+                          selectedConnector === null
+                        }
+                        onClick={() => void handleStartCharging()}
+                      >
+                        {actionLoading ? "Starting..." : "Start Charging"}
+                      </button>
                     </div>
-                  </button>
+                  </article>
                 );
               })}
             </div>
           </section>
         )}
-
-        <Dialog
-          open={isConnectorDialogOpen && !!selectedCharger}
-          onOpenChange={(open) => {
-            setIsConnectorDialogOpen(open);
-            if (!open) {
-              setSelectedChargerId(null);
-              setSelectedConnectorId(null);
-            }
-          }}
-        >
-          <DialogContent className="max-w-lg border border-slate-200 bg-white">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-slate-900">
-                Select Connector
-              </DialogTitle>
-              <DialogDescription className="text-sm text-slate-600">
-                {selectedCharger
-                  ? `${selectedCharger.name} • ${selectedCharger.type} • ${selectedCharger.max_power_kw} kW • Rs ${Number(selectedCharger.price_per_kwh ?? 0).toFixed(2)}/kWh`
-                  : "Choose one available connector."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-2">
-              {chargerConnectors.length === 0 && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                  No connectors found for this charger.
-                </div>
-              )}
-
-              {chargerConnectors.length > 0 &&
-                selectableConnectors.length === 0 && (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                    No available connectors on this charger right now. You can
-                    monitor running sessions from Live Sessions.
-                  </div>
-                )}
-
-              {chargerConnectors.map((connector) => {
-                const isSelectable = connector.status === "AVAILABLE";
-                const statusText =
-                  connector.status === "AVAILABLE"
-                    ? "Available"
-                    : connector.status === "IN_CHARGING"
-                      ? "IN CHARGING"
-                      : "Reserved";
-                const statusBadgeClass =
-                  connector.status === "AVAILABLE"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : connector.status === "IN_CHARGING"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-amber-100 text-amber-700";
-
-                return (
-                  <label
-                    key={connector.connector_id}
-                    className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${
-                      isSelectable
-                        ? "cursor-pointer border-slate-200 bg-slate-50"
-                        : "cursor-not-allowed border-slate-200 bg-slate-100 opacity-70"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="connector"
-                        checked={selectedConnectorId === connector.connector_id}
-                        disabled={!isSelectable}
-                        onChange={() =>
-                          setSelectedConnectorId(connector.connector_id)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {connector.connector_number}.{" "}
-                          {connector.charge_point_id}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          DC {selectedCharger?.max_power_kw} kW
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass}`}
-                    >
-                      {statusText}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void handleStartCharging()}
-              disabled={!selectedConnector || actionLoading}
-              className="mt-2 w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {actionLoading ? "Starting..." : "Start Charging"}
-            </button>
-          </DialogContent>
-        </Dialog>
       </div>
     </main>
   );

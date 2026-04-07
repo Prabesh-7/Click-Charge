@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import { getMyChargers, updateCharger, deleteCharger } from "@/api/managerApi";
+import {
+  getMyChargers,
+  updateCharger,
+  deleteCharger,
+  addCharger,
+} from "@/api/managerApi";
 import { Button } from "@/components/ui/button";
-import { Edit2, Plug, Trash2, Zap } from "lucide-react";
+import { Edit2, Plug, Trash2, Zap, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -10,6 +15,13 @@ import {
 } from "@/lib/schema/CreateChargerSchema";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { z } from "zod";
 
 type CreateChargerFormValues = z.input<typeof createChargerSchema>;
@@ -44,6 +56,7 @@ export default function MyChargers() {
   const [error, setError] = useState<string | null>(null);
   const [editingCharger, setEditingCharger] = useState<Charger | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -54,6 +67,22 @@ export default function MyChargers() {
     setValue,
   } = useForm<CreateChargerFormValues, unknown, CreateChargerSubmitValues>({
     resolver: zodResolver(createChargerSchema),
+  });
+
+  const {
+    register: registerAdd,
+    handleSubmit: handleSubmitAdd,
+    formState: { errors: addErrors, isSubmitting: isAddSubmitting },
+    reset: resetAdd,
+  } = useForm<CreateChargerFormValues, unknown, CreateChargerSubmitValues>({
+    resolver: zodResolver(createChargerSchema),
+    defaultValues: {
+      name: "",
+      connector_count: 1,
+      type: "CCS2",
+      max_power_kw: 50,
+      current_transaction_id: undefined,
+    },
   });
 
   const fetchChargers = async () => {
@@ -162,6 +191,38 @@ export default function MyChargers() {
     }
   };
 
+  const handleAddClick = () => {
+    resetAdd();
+    setShowAddModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    resetAdd();
+  };
+
+  const onSubmitAdd = async (data: CreateChargerSubmitValues) => {
+    try {
+      await addCharger(data);
+      alert("Charger added successfully!");
+      handleCloseAddModal();
+      await fetchChargers();
+    } catch (error: any) {
+      console.error(
+        "Failed to add charger:",
+        error.response?.data || error.message,
+      );
+      const detail = error.response?.data?.detail;
+      if (typeof detail === "string") {
+        alert(detail);
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        alert(detail[0].msg);
+      } else {
+        alert("Failed to add charger. Please try again.");
+      }
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "AVAILABLE":
@@ -180,19 +241,30 @@ export default function MyChargers() {
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6">
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#22C55E]" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#22C55E]">
-              Charger Network
-            </span>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="mb-1.5 flex items-center gap-2">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#22C55E]" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#22C55E]">
+                Charger Network
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              My Chargers
+            </h1>
+            <p className="mt-1.5 text-sm text-gray-500">
+              View and manage chargers in your station.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            My Chargers
-          </h1>
-          <p className="mt-1.5 text-sm text-gray-500">
-            View and manage chargers in your station.
-          </p>
+          {chargers.length > 0 && (
+            <button
+              onClick={handleAddClick}
+              className="shrink-0 h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+            >
+              <Plus size={20} />
+              Add Charger
+            </button>
+          )}
         </div>
       </div>
 
@@ -230,6 +302,13 @@ export default function MyChargers() {
               <p className="text-base font-semibold text-gray-700">
                 No chargers found. Add your first charger to get started.
               </p>
+              <button
+                onClick={handleAddClick}
+                className="mt-6 h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              >
+                <Plus size={20} />
+                Add a charger of your station
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-2">
@@ -346,34 +425,36 @@ export default function MyChargers() {
       )}
 
       {showEditModal && editingCharger && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
               Edit Charger
             </h2>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <Field className="gap-2">
-                <FieldLabel className="text-base font-medium">
+                <FieldLabel className="text-sm font-medium text-gray-700">
                   Charger Name
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. Charger A1"
                   {...register("name")}
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.name.message}
+                  </p>
                 )}
               </Field>
 
               <Field className="gap-2">
-                <FieldLabel className="text-base font-medium">
+                <FieldLabel className="text-sm font-medium text-gray-700">
                   Number of Connectors
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500 cursor-not-allowed"
                   placeholder="e.g. 2"
                   min={1}
                   max={20}
@@ -384,18 +465,18 @@ export default function MyChargers() {
                   })}
                 />
                 {errors.connector_count && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-xs text-red-600 mt-1">
                     {errors.connector_count.message}
                   </p>
                 )}
               </Field>
 
               <Field className="gap-2">
-                <FieldLabel className="text-base font-medium">
+                <FieldLabel className="text-sm font-medium text-gray-700">
                   Charger Type
                 </FieldLabel>
                 <select
-                  className="h-10 border border-[#B6B6B6] rounded px-2 text-sm w-full"
+                  className="h-10 border border-gray-300 rounded-lg px-3 text-sm w-full focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900"
                   {...register("type")}
                 >
                   <option value="">Select type</option>
@@ -406,17 +487,19 @@ export default function MyChargers() {
                   ))}
                 </select>
                 {errors.type && (
-                  <p className="text-sm text-red-500">{errors.type.message}</p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.type.message}
+                  </p>
                 )}
               </Field>
 
               <Field className="gap-2">
-                <FieldLabel className="text-base font-medium">
+                <FieldLabel className="text-sm font-medium text-gray-700">
                   Max Power (kW)
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 50"
                   min={1}
                   {...register("max_power_kw", {
@@ -425,21 +508,21 @@ export default function MyChargers() {
                   })}
                 />
                 {errors.max_power_kw && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-xs text-red-600 mt-1">
                     {errors.max_power_kw.message}
                   </p>
                 )}
               </Field>
 
               <Field className="gap-2">
-                <FieldLabel className="text-base font-medium">
+                <FieldLabel className="text-sm font-medium text-gray-700">
                   Price Per kWh (Rs)
                 </FieldLabel>
                 <Input
                   type="number"
                   step="0.01"
                   min={0}
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 12"
                   {...register("price_per_kwh", {
                     setValueAs: (value) =>
@@ -447,19 +530,19 @@ export default function MyChargers() {
                   })}
                 />
                 {errors.price_per_kwh && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-xs text-red-600 mt-1">
                     {errors.price_per_kwh.message}
                   </p>
                 )}
               </Field>
 
               <Field className="gap-2">
-                <FieldLabel className="text-base font-medium">
+                <FieldLabel className="text-sm font-medium text-gray-700">
                   Current Transaction ID (optional)
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="Leave empty if none"
                   {...register("current_transaction_id", {
                     setValueAs: (value) =>
@@ -467,31 +550,144 @@ export default function MyChargers() {
                   })}
                 />
                 {errors.current_transaction_id && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-xs text-red-600 mt-1">
                     {errors.current_transaction_id.message}
                   </p>
                 )}
               </Field>
 
-              <div className="flex gap-3">
-                <Button
+              <div className="flex gap-3 mt-6">
+                <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 h-10 bg-gray-200 text-gray-900 hover:bg-gray-300"
+                  className="flex-1 h-10 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 h-10 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showAddModal && (
+        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                Add Charger
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmitAdd(onSubmitAdd)} className="space-y-6">
+              <Field className="gap-2">
+                <FieldLabel className="text-sm font-medium text-gray-700">
+                  Charger Name
+                </FieldLabel>
+                <Input
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  placeholder="e.g. Charger A1"
+                  {...registerAdd("name")}
+                />
+                {addErrors.name && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {addErrors.name.message}
+                  </p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-sm font-medium text-gray-700">
+                  Number of Connectors
+                </FieldLabel>
+                <Input
+                  type="number"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  placeholder="e.g. 2"
+                  min={1}
+                  max={20}
+                  {...registerAdd("connector_count", {
+                    setValueAs: (value) =>
+                      value === "" ? undefined : Number(value),
+                  })}
+                />
+                {addErrors.connector_count && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {addErrors.connector_count.message}
+                  </p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-sm font-medium text-gray-700">
+                  Charger Type
+                </FieldLabel>
+                <select
+                  className="h-10 border border-gray-300 rounded-lg px-3 text-sm w-full focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900"
+                  {...registerAdd("type")}
+                >
+                  <option value="">Select type</option>
+                  {chargerTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                {addErrors.type && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {addErrors.type.message}
+                  </p>
+                )}
+              </Field>
+
+              <Field className="gap-2">
+                <FieldLabel className="text-sm font-medium text-gray-700">
+                  Max Power (kW)
+                </FieldLabel>
+                <Input
+                  type="number"
+                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  placeholder="e.g. 50"
+                  min={1}
+                  {...registerAdd("max_power_kw", {
+                    setValueAs: (value) =>
+                      value === "" ? undefined : Number(value),
+                  })}
+                />
+                {addErrors.max_power_kw && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {addErrors.max_power_kw.message}
+                  </p>
+                )}
+              </Field>
+
+              <DialogFooter className="gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseAddModal}
+                  className="h-10"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#22C55E] text-white hover:bg-[#16a34a]"
+                  disabled={isAddSubmitting}
+                  className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
-                  {isSubmitting ? "Saving..." : "Save Changes"}
+                  {isAddSubmitting ? "Adding..." : "Add Charger"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </main>
   );

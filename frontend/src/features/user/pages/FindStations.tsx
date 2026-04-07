@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import {
   Bath,
   BedDouble,
@@ -10,9 +9,9 @@ import {
   Navigation,
   Phone,
   Plug,
+  Plus,
   Search,
   UtensilsCrossed,
-  Wallet,
   Wifi,
   X,
   Zap,
@@ -126,6 +125,9 @@ export default function FindStations() {
   const navigate = useNavigate();
   const [stations, setStations] = useState<UserStation[]>([]);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const [locationStatus, setLocationStatus] = useState<
+    "idle" | "loading" | "ready" | "blocked"
+  >("idle");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [directionLoadingStationId, setDirectionLoadingStationId] = useState<
@@ -221,9 +223,35 @@ export default function FindStations() {
         {
           enableHighAccuracy: true,
           timeout: 10000,
+          maximumAge: 60000,
         },
       );
     });
+  };
+
+  const syncUserLocation = async () => {
+    try {
+      setError(null);
+      setLocationStatus("loading");
+      const currentLocation = await requestUserLocation();
+      setUserLocation(currentLocation);
+      setLocationStatus("ready");
+    } catch {
+      setLocationStatus("blocked");
+      setError("Location access denied. Enable location to see distance.");
+    }
+  };
+
+  const handleAskLocation = () => {
+    const agreed = window.confirm(
+      "Allow location access to show station distance from your current location?",
+    );
+
+    if (!agreed) {
+      return;
+    }
+
+    void syncUserLocation();
   };
 
   const stationDistances = useMemo(() => {
@@ -270,8 +298,11 @@ export default function FindStations() {
       setError(null);
       setDirectionLoadingStationId(station.station_id);
 
-      const currentLocation = await requestUserLocation();
-      setUserLocation(currentLocation);
+      const currentLocation = userLocation ?? (await requestUserLocation());
+      if (!userLocation) {
+        setUserLocation(currentLocation);
+        setLocationStatus("ready");
+      }
 
       const destination = `${station.latitude},${station.longitude}`;
       const origin = `${currentLocation.latitude},${currentLocation.longitude}`;
@@ -280,6 +311,7 @@ export default function FindStations() {
 
       window.open(directionUrl, "_blank", "noopener,noreferrer");
     } catch (locationError: any) {
+      setLocationStatus("blocked");
       setError(locationError?.message || "Unable to get your location.");
     } finally {
       setDirectionLoadingStationId(null);
@@ -313,28 +345,47 @@ export default function FindStations() {
             </div>
 
             {!loading && stations.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 justify-end">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
-                  <Wallet size={13} />
-                  Balance: Rs{" "}
-                  {walletBalance === null ? "..." : walletBalance.toFixed(2)}
+              <div className="flex w-full max-w-lg flex-col gap-2 sm:items-end">
+                <div className="grid w-full gap-2 sm:grid-cols-2">
+                  <div className="flex h-14 items-center rounded-xl border border-emerald-200 bg-white px-3 shadow-sm">
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-emerald-600">
+                          Total Balance
+                        </p>
+                        <p className="text-lg font-bold tracking-tight text-gray-900">
+                          Rs{" "}
+                          {walletBalance === null
+                            ? "..."
+                            : walletBalance.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                        <Plus size={16} strokeWidth={2.4} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/user/wallet")}
+                    className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  >
+                    <Plus size={15} strokeWidth={2.5} />
+                    Add Balance
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate("/user/wallet")}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                >
-                  <Wallet size={13} />
-                  Add Balance
-                </button>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#22C55E]/20 bg-[#22C55E]/5 px-3 py-1.5 text-xs font-medium text-[#22C55E] shadow-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
-                  {availableCount} available
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
-                  {busyCount} busy
-                </span>
+
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-2xl border border-[#22C55E]/15 bg-[#22C55E]/8 px-3 py-1.5 text-xs font-medium text-[#16a34a] shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                    {availableCount} available
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                    {busyCount} busy
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -350,7 +401,7 @@ export default function FindStations() {
               placeholder="Search by station name or address…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-10 text-sm text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#22C55E] focus:ring-2 focus:ring-[#22C55E]/20"
+              className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-10 text-sm text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#22C55E] focus:ring-2 focus:ring-[#22C55E]/20"
             />
             {searchQuery && (
               <button
@@ -406,9 +457,13 @@ export default function FindStations() {
             sortedStations.map((station) => {
               const distance = stationDistances.get(station.station_id);
               const isAvailable = station.available_connectors > 0;
-              const plugTypes = station.charger_types.filter((plugType) =>
-                Boolean(plugType?.trim()),
+              const plugTypes = (station.charger_types ?? []).filter(
+                (plugType) => Boolean(plugType?.trim()),
               );
+              const hasValidCoordinates =
+                Number.isFinite(station.latitude) &&
+                Number.isFinite(station.longitude);
+              const mapKey = `${station.station_id}-${station.latitude}-${station.longitude}`;
 
               const amenities = [
                 {
@@ -452,60 +507,27 @@ export default function FindStations() {
               return (
                 <article
                   key={station.station_id}
-                  className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
+                  className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
                 >
                   {/* Map */}
-                  <div className="relative z-0 h-40 border-b border-gray-100">
-                    <MapContainer
-                      center={[station.latitude, station.longitude]}
-                      zoom={13}
-                      scrollWheelZoom={false}
-                      className="h-full w-full"
-                    >
-                      <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  <div
+                    key={`map-shell-${mapKey}`}
+                    className="relative z-0 h-44 border-b border-gray-100"
+                  >
+                    {hasValidCoordinates ? (
+                      <iframe
+                        key={`map-${mapKey}`}
+                        title={`Map preview of ${station.station_name}`}
+                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${station.longitude - 0.01}%2C${station.latitude - 0.01}%2C${station.longitude + 0.01}%2C${station.latitude + 0.01}&layer=mapnik&marker=${station.latitude}%2C${station.longitude}`}
+                        className="h-full w-full border-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
                       />
-                      <CircleMarker
-                        center={[station.latitude, station.longitude]}
-                        radius={9}
-                        pathOptions={{
-                          color: isAvailable ? "#22C55E" : "#9ca3af",
-                          fillColor: isAvailable ? "#22C55E" : "#d1d5db",
-                          fillOpacity: 0.85,
-                          weight: 2,
-                        }}
-                      >
-                        <Popup>
-                          <div className="text-sm">
-                            <p className="font-semibold">
-                              {station.station_name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {station.address}
-                            </p>
-                          </div>
-                        </Popup>
-                      </CircleMarker>
-
-                      {userLocation && (
-                        <CircleMarker
-                          center={[
-                            userLocation.latitude,
-                            userLocation.longitude,
-                          ]}
-                          radius={7}
-                          pathOptions={{
-                            color: "#2563eb",
-                            fillColor: "#3b82f6",
-                            fillOpacity: 0.9,
-                            weight: 2,
-                          }}
-                        >
-                          <Popup>Your location</Popup>
-                        </CircleMarker>
-                      )}
-                    </MapContainer>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs font-medium text-gray-500">
+                        Map unavailable for this station
+                      </div>
+                    )}
                   </div>
 
                   {/* Card Body */}
@@ -544,11 +566,23 @@ export default function FindStations() {
                           size={13}
                           className="shrink-0 text-gray-400"
                         />
-                        <span className="font-medium">
-                          {typeof distance === "number"
-                            ? `${distance.toFixed(1)} km`
-                            : "N/A"}
-                        </span>
+                        {typeof distance === "number" ? (
+                          <span className="font-medium">
+                            {`${distance.toFixed(1)} km`}
+                          </span>
+                        ) : locationStatus === "loading" ? (
+                          <span className="font-medium">
+                            Getting location...
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleAskLocation}
+                            className="inline-flex items-center rounded-full border border-[#22C55E]/20 bg-[#22C55E]/8 px-2.5 py-0.5 font-medium text-[#16a34a] transition hover:border-[#22C55E]/30 hover:bg-[#22C55E]/15"
+                          >
+                            Distance unavailable
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-600">
                         <Phone size={13} className="shrink-0 text-gray-400" />
@@ -683,6 +717,40 @@ export default function FindStations() {
 
                 <ScrollArea className="h-[70vh] bg-slate-50/60">
                   <div className="space-y-5 px-6 py-5 pb-6">
+                    {selectedStation.station_images.length > 0 && (
+                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-200 px-4 py-3">
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Station Images
+                          </h3>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Photos of the station and charging area.
+                          </p>
+                        </div>
+                        <div className="grid gap-2 p-3 sm:grid-cols-2">
+                          {selectedStation.station_images.map(
+                            (imageUrl, index) => (
+                              <div
+                                key={imageUrl}
+                                className={`overflow-hidden rounded-xl border border-slate-100 bg-slate-100 ${
+                                  index === 0 &&
+                                  selectedStation.station_images.length > 1
+                                    ? "sm:col-span-2 h-56"
+                                    : "h-36"
+                                }`}
+                              >
+                                <img
+                                  src={imageUrl}
+                                  alt={`${selectedStation.station_name} ${index + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Station Details
@@ -724,14 +792,16 @@ export default function FindStations() {
                       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Plugs
                       </h3>
-                      {selectedStation.charger_types.length > 0 ? (
+                      {(selectedStation.charger_types ?? []).length > 0 ? (
                         <div className="flex flex-wrap gap-2">
-                          {selectedStation.charger_types.map((plugType) => (
-                            <PlugTypeBadge
-                              key={`${selectedStation.station_id}-${plugType}`}
-                              plugType={plugType}
-                            />
-                          ))}
+                          {(selectedStation.charger_types ?? []).map(
+                            (plugType) => (
+                              <PlugTypeBadge
+                                key={`${selectedStation.station_id}-${plugType}`}
+                                plugType={plugType}
+                              />
+                            ),
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500">

@@ -62,27 +62,27 @@ export default function AddCharger() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Charger Name */}
         <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">
+          <FieldLabel className="text-sm font-medium text-gray-700">
             Charger Name
           </FieldLabel>
           <Input
-            className="h-10 border border-[#B6B6B6]"
+            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
             placeholder="e.g. Charger A1"
             {...register("name")}
           />
           {errors.name && (
-            <p className="text-sm text-red-500">{errors.name.message}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>
           )}
         </Field>
 
         {/* Connector Count */}
         <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">
+          <FieldLabel className="text-sm font-medium text-gray-700">
             Number of Connectors
           </FieldLabel>
           <Input
             type="number"
-            className="h-10 border border-[#B6B6B6]"
+            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
             placeholder="e.g. 2"
             min={1}
             max={20}
@@ -91,7 +91,7 @@ export default function AddCharger() {
             })}
           />
           {errors.connector_count && (
-            <p className="text-sm text-red-500">
+            <p className="text-xs text-red-600 mt-1">
               {errors.connector_count.message}
             </p>
           )}
@@ -99,11 +99,11 @@ export default function AddCharger() {
 
         {/* Charger Type */}
         <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">
+          <FieldLabel className="text-sm font-medium text-gray-700">
             Charger Type
           </FieldLabel>
           <select
-            className="h-10 border border-[#B6B6B6] rounded px-2 text-sm w-full"
+            className="h-10 border border-gray-300 rounded-lg px-3 text-sm w-full focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900"
             {...register("type")}
           >
             <option value="">Select type</option>
@@ -114,18 +114,18 @@ export default function AddCharger() {
             ))}
           </select>
           {errors.type && (
-            <p className="text-sm text-red-500">{errors.type.message}</p>
+            <p className="text-xs text-red-600 mt-1">{errors.type.message}</p>
           )}
         </Field>
 
         {/* Max Power (kW) */}
         <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">
+          <FieldLabel className="text-sm font-medium text-gray-700">
             Max Power (kW)
           </FieldLabel>
           <Input
             type="number"
-            className="h-10 border border-[#B6B6B6]"
+            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
             placeholder="e.g. 50"
             min={1}
             {...register("max_power_kw", {
@@ -133,28 +133,8 @@ export default function AddCharger() {
             })}
           />
           {errors.max_power_kw && (
-            <p className="text-sm text-red-500">
+            <p className="text-xs text-red-600 mt-1">
               {errors.max_power_kw.message}
-            </p>
-          )}
-        </Field>
-
-        {/* Current Transaction ID (optional) */}
-        <Field className="gap-2">
-          <FieldLabel className="text-base font-medium">
-            Current Transaction ID (optional)
-          </FieldLabel>
-          <Input
-            type="number"
-            className="h-10 border border-[#B6B6B6]"
-            placeholder="Leave empty if none"
-            {...register("current_transaction_id", {
-              setValueAs: (value) => (value === "" ? undefined : Number(value)),
-            })}
-          />
-          {errors.current_transaction_id && (
-            <p className="text-sm text-red-500">
-              {errors.current_transaction_id.message}
             </p>
           )}
         </Field>
@@ -162,7 +142,7 @@ export default function AddCharger() {
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-14 bg-green-400"
+          className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
         >
           {isSubmitting ? "Adding..." : "Add Charger"}
         </Button>

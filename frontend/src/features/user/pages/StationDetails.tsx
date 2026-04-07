@@ -49,7 +49,7 @@ export default function StationDetails() {
             Station Details
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Full station information and amenities.
+            Full station information.
           </p>
         </div>
 
