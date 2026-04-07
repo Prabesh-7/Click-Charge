@@ -324,65 +324,52 @@ export default function FindStations() {
   const busyCount = stations.filter((s) => s.available_connectors === 0).length;
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
-      <div className="mx-auto max-w-6xl">
-        {/* Page Header */}
-        <div className="mb-6">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#22C55E]" />
-                <span className="text-xs font-semibold uppercase tracking-widest text-[#22C55E]">
-                  Live Network
-                </span>
+    <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-6 md:py-10">
+      <div className="mx-auto max-w-7xl">
+        <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Live network
               </div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                Charging Stations
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+                Find Charging Stations
               </h1>
-              <p className="mt-1.5 text-sm text-gray-500">
-                Find and navigate to nearby EV charging points
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                Search nearby charging stations, compare availability, and open
+                directions in a simple layout that stays easy to read.
               </p>
             </div>
 
             {!loading && stations.length > 0 && (
-              <div className="flex w-full max-w-lg flex-col gap-2 sm:items-end">
-                <div className="grid w-full gap-2 sm:grid-cols-2">
-                  <div className="flex h-14 items-center rounded-xl border border-emerald-200 bg-white px-3 shadow-sm">
-                    <div className="flex w-full items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-emerald-600">
-                          Total Balance
-                        </p>
-                        <p className="text-lg font-bold tracking-tight text-gray-900">
-                          Rs{" "}
-                          {walletBalance === null
-                            ? "..."
-                            : walletBalance.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                        <Plus size={16} strokeWidth={2.4} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate("/user/wallet")}
-                    className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                  >
-                    <Plus size={15} strokeWidth={2.5} />
-                    Add Balance
-                  </button>
+              <div className="grid w-full gap-3 sm:grid-cols-2 lg:max-w-xl lg:justify-end">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Wallet Balance
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                    Rs{" "}
+                    {walletBalance === null ? "..." : walletBalance.toFixed(2)}
+                  </p>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-2xl border border-[#22C55E]/15 bg-[#22C55E]/8 px-3 py-1.5 text-xs font-medium text-[#16a34a] shadow-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
+                <button
+                  type="button"
+                  onClick={() => navigate("/user/wallet")}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                >
+                  <Plus size={15} strokeWidth={2.5} />
+                  Add Balance
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2 sm:col-span-2 sm:justify-end">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     {availableCount} available
                   </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                     {busyCount} busy
                   </span>
                 </div>
@@ -390,30 +377,31 @@ export default function FindStations() {
             )}
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Search by station name or address…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-10 text-sm text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-[#22C55E] focus:ring-2 focus:ring-[#22C55E]/20"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-gray-200 text-gray-500 transition hover:bg-gray-300"
-              >
-                <X size={11} />
-              </button>
-            )}
+          <div className="px-5 py-5">
+            <div className="relative">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                placeholder="Search by station name or address"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+                >
+                  <X size={11} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* Error */}
         {error && (
@@ -507,12 +495,12 @@ export default function FindStations() {
               return (
                 <article
                   key={station.station_id}
-                  className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
                 >
                   {/* Map */}
                   <div
                     key={`map-shell-${mapKey}`}
-                    className="relative z-0 h-44 border-b border-gray-100"
+                    className="relative z-0 h-44 border-b border-slate-100"
                   >
                     {hasValidCoordinates ? (
                       <iframe
@@ -531,14 +519,14 @@ export default function FindStations() {
                   </div>
 
                   {/* Card Body */}
-                  <div className="p-4">
+                  <div className="p-4 md:p-5">
                     {/* Name + Status Badge */}
-                    <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="mb-4 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <h2 className="truncate text-base font-bold text-gray-900">
+                        <h2 className="truncate text-lg font-bold text-slate-900">
                           {station.station_name}
                         </h2>
-                        <p className="mt-1 flex items-center gap-1 truncate text-xs text-gray-500">
+                        <p className="mt-1 flex items-center gap-1 truncate text-sm text-slate-500">
                           <MapPin size={12} className="shrink-0" />
                           {station.address}
                         </p>
@@ -560,46 +548,49 @@ export default function FindStations() {
                     </div>
 
                     {/* Distance & Phone */}
-                    <div className="mb-3 flex items-center justify-between gap-2 pb-3 border-b border-gray-100">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-1.5 text-sm text-slate-600">
                         <Navigation
                           size={13}
-                          className="shrink-0 text-gray-400"
+                          className="shrink-0 text-slate-400"
                         />
                         {typeof distance === "number" ? (
-                          <span className="font-medium">
+                          <span className="font-medium text-slate-700">
                             {`${distance.toFixed(1)} km`}
                           </span>
                         ) : locationStatus === "loading" ? (
-                          <span className="font-medium">
+                          <span className="font-medium text-slate-700">
                             Getting location...
                           </span>
                         ) : (
                           <button
                             type="button"
                             onClick={handleAskLocation}
-                            className="inline-flex items-center rounded-full border border-[#22C55E]/20 bg-[#22C55E]/8 px-2.5 py-0.5 font-medium text-[#16a34a] transition hover:border-[#22C55E]/30 hover:bg-[#22C55E]/15"
+                            className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-medium text-emerald-700 transition hover:bg-emerald-100"
                           >
                             Distance unavailable
                           </button>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                        <Phone size={13} className="shrink-0 text-gray-400" />
-                        <span className="truncate">
+                      <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                        <Phone size={13} className="shrink-0 text-slate-400" />
+                        <span className="truncate text-slate-700">
                           {station.phone_number || "N/A"}
                         </span>
                       </div>
                     </div>
 
                     {/* Chargers Info */}
-                    <div className="mb-3 space-y-2.5">
+                    <div className="mb-4 space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                          <Plug size={14} className="shrink-0 text-[#22C55E]" />
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <Plug
+                            size={14}
+                            className="shrink-0 text-emerald-600"
+                          />
                           Plug Types
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-[#22C55E]/10 px-2 py-1 text-xs font-bold text-[#22C55E]">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
                           {station.available_connectors}/
                           {station.total_connectors}
                         </span>
@@ -615,7 +606,7 @@ export default function FindStations() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-500">
                           Plug types not available.
                         </p>
                       )}
@@ -631,7 +622,7 @@ export default function FindStations() {
                             <span
                               key={amenity.key}
                               title={amenity.label}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-slate-200"
                             >
                               <AmenityIcon size={16} />
                             </span>
@@ -641,14 +632,14 @@ export default function FindStations() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2.5">
                       <button
                         type="button"
                         onClick={() => void openDirections(station)}
                         disabled={
                           directionLoadingStationId === station.station_id
                         }
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#22C55E] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#16a34a] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Navigation size={14} />
                         {directionLoadingStationId === station.station_id
@@ -660,7 +651,7 @@ export default function FindStations() {
                         <button
                           type="button"
                           onClick={() => setSelectedStation(station)}
-                          className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98]"
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98]"
                         >
                           <Eye size={13} />
                           Details
@@ -672,7 +663,7 @@ export default function FindStations() {
                               `/user/stations/${station.station_id}/availability`,
                             )
                           }
-                          className="flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-200 active:scale-[0.98]"
+                          className="flex items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]"
                         >
                           <Plug size={13} />
                           Chargers

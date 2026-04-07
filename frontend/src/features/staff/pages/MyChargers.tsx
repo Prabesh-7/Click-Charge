@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Plug, Zap } from "lucide-react";
 import { getMyChargersByStaff } from "@/api/staffApi";
 
 interface Charger {
@@ -22,6 +23,21 @@ interface Charger {
   created_at: string;
   last_status_change: string;
 }
+
+const formatStatus = (value: string) => value.replace(/_/g, " ");
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "AVAILABLE":
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    case "IN_CHARGING":
+      return "bg-blue-100 text-blue-700 border border-blue-200";
+    case "RESERVED":
+      return "bg-amber-100 text-amber-700 border border-amber-200";
+    default:
+      return "bg-slate-100 text-slate-700 border border-slate-200";
+  }
+};
 
 export default function StaffMyChargers() {
   const [chargers, setChargers] = useState<Charger[]>([]);
@@ -54,112 +70,193 @@ export default function StaffMyChargers() {
       }
     };
 
-    fetchChargers();
+    void fetchChargers();
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "AVAILABLE":
-        return "bg-green-100 text-green-800";
-      case "IN_CHARGING":
-        return "bg-blue-100 text-blue-800";
-      case "RESERVED":
-        return "bg-yellow-100 text-yellow-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  const summary = useMemo(() => {
+    const totalConnectors = chargers.reduce(
+      (count, charger) => count + (charger.connectors?.length || 0),
+      0,
+    );
+    const availableConnectors = chargers.reduce(
+      (count, charger) =>
+        count +
+        (charger.connectors || []).filter(
+          (connector) => connector.status === "AVAILABLE",
+        ).length,
+      0,
+    );
+
+    return {
+      totalChargers: chargers.length,
+      totalConnectors,
+      availableConnectors,
+    };
+  }, [chargers]);
 
   return (
-    <main className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Chargers</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          View chargers assigned to your station.
-        </p>
-      </div>
-
-      {loading && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Loading chargers...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{error}</p>
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          {chargers.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">
-                No chargers found for your station.
+    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
+      <div className="mx-auto max-w-6xl space-y-5">
+        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#22C55E]" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-[#22C55E]">
+                  Staff Operations
+                </span>
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                My Chargers
+              </h1>
+              <p className="mt-1.5 text-sm text-gray-500">
+                View chargers assigned to your station.
               </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {chargers.map((charger) => (
-                <div
-                  key={charger.charger_id}
-                  className="bg-white border border-[#B6B6B6] rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {charger.name}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(charger.status)}`}
-                    >
-                      {charger.status.replace("_", " ")}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Type:</span>
-                      <span className="text-gray-900 font-medium">
-                        {charger.type}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Charger ID:</span>
-                      <span className="text-gray-900 font-medium">
-                        #{charger.charger_id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Connectors:</span>
-                      <span className="text-gray-900 font-medium">
-                        {charger.connectors?.length || 0}
-                      </span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="text-gray-500">Connector CPIDs:</span>
-                      <div className="text-gray-900 mt-1">
-                        {(charger.connectors || []).map((connector) => (
-                          <div key={connector.connector_id}>
-                            C{connector.connector_number}:{" "}
-                            {connector.charge_point_id}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Max Power:</span>
-                      <span className="text-gray-900 font-medium">
-                        {charger.max_power_kw} kW
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  Chargers
+                </p>
+                <p className="mt-1 text-2xl font-bold text-gray-900">
+                  {summary.totalChargers}
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  Connectors
+                </p>
+                <p className="mt-1 text-2xl font-bold text-gray-900">
+                  {summary.totalConnectors}
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  Available
+                </p>
+                <p className="mt-1 text-2xl font-bold text-gray-900">
+                  {summary.availableConnectors}
+                </p>
+              </div>
             </div>
-          )}
-        </>
-      )}
+          </div>
+        </section>
+
+        {loading && (
+          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+            Loading chargers...
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {chargers.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                  <Zap size={22} />
+                </div>
+                <p className="text-base font-semibold text-gray-700">
+                  No chargers found for your station.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-2">
+                {chargers.map((charger) => {
+                  const availableCount = charger.connectors.filter(
+                    (connector) => connector.status === "AVAILABLE",
+                  ).length;
+
+                  return (
+                    <article
+                      key={charger.charger_id}
+                      className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
+                    >
+                      <div className="border-b border-gray-100 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-lg font-bold text-gray-900">
+                              {charger.name}
+                            </h3>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Charge Point: {charger.charge_point_id}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusColor(charger.status)}`}
+                          >
+                            {formatStatus(charger.status)}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                          <div className="rounded-lg bg-gray-50 px-2.5 py-2">
+                            <p className="text-gray-500">Type</p>
+                            <p className="mt-1 font-semibold text-gray-800">
+                              {charger.type}
+                            </p>
+                          </div>
+                          <div className="rounded-lg bg-gray-50 px-2.5 py-2">
+                            <p className="text-gray-500">Max Power</p>
+                            <p className="mt-1 font-semibold text-gray-800">
+                              {charger.max_power_kw} kW
+                            </p>
+                          </div>
+                          <div className="rounded-lg bg-gray-50 px-2.5 py-2 col-span-2 sm:col-span-1">
+                            <p className="text-gray-500">Available</p>
+                            <p className="mt-1 font-semibold text-gray-800">
+                              {availableCount}/{charger.connectors?.length || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 p-4">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-500">
+                          <Plug size={14} className="text-emerald-600" />
+                          Connectors
+                        </div>
+
+                        {charger.connectors.length === 0 ? (
+                          <p className="text-sm text-gray-500">
+                            No connectors configured.
+                          </p>
+                        ) : (
+                          charger.connectors.map((connector) => (
+                            <div
+                              key={connector.connector_id}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  Connector {connector.connector_number}
+                                </p>
+                                <p className="truncate text-xs text-gray-500">
+                                  {connector.charge_point_id}
+                                </p>
+                              </div>
+                              <span
+                                className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusColor(connector.status)}`}
+                              >
+                                {formatStatus(connector.status)}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </main>
   );
 }
