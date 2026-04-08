@@ -6,6 +6,7 @@ from app.models.chargers import create_tables as create_charger_tables
 from app.models.reservation import create_tables as create_reservation_tables
 from app.models.wallet import create_tables as create_wallet_tables
 from app.models.charging_session import create_tables as create_charging_session_tables
+from app.models.station_review import create_tables as create_station_review_tables
 
 from app.routes import auth
 from app.routes import admin_routes
@@ -63,5 +64,6 @@ async def on_startup():
     await create_reservation_tables()
     await create_wallet_tables()
     await create_charging_session_tables()
+    await create_station_review_tables()
     
     

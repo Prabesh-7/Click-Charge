@@ -8,7 +8,9 @@ import uuid
 from app.models.user import User, UserRole
 from app.models.stations import Station
 from app.models.chargers import Charger
+from app.models.station_review import StationReview
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
+from app.schemas.station_review import ManagerStationReviewOut, StationReviewSummaryOut
 from app.schemas.userValidation import UserCreate, UserOut
 from typing import List
 
@@ -294,3 +296,73 @@ async def delete_staff_for_manager(
   await db.commit()
 
   return {"message": "Staff member deleted successfully"}
+
+
+async def get_station_reviews_for_manager(
+    current_manager: User,
+    db: AsyncSession,
+) -> list[ManagerStationReviewOut]:
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
+  reviews_result = await db.execute(
+      select(StationReview, User.user_name, User.email)
+      .join(User, User.user_id == StationReview.user_id)
+      .where(StationReview.station_id == station.station_id)
+      .order_by(StationReview.updated_at.desc())
+  )
+
+  return [
+      ManagerStationReviewOut(
+          review_id=review.review_id,
+          station_id=review.station_id,
+          user_id=review.user_id,
+          user_name=user_name,
+          user_email=user_email,
+          rating=review.rating,
+          review_text=review.review_text,
+          created_at=review.created_at,
+          updated_at=review.updated_at,
+      )
+      for review, user_name, user_email in reviews_result.all()
+  ]
+
+
+async def get_station_review_summary_for_manager(
+    current_manager: User,
+    db: AsyncSession,
+) -> StationReviewSummaryOut:
+  station_result = await db.execute(
+      select(Station).where(Station.manager_id == current_manager.user_id)
+  )
+  station = station_result.scalar_one_or_none()
+
+  if not station:
+      raise HTTPException(
+          status_code=404,
+          detail="No station assigned to this manager.",
+      )
+
+  aggregate_result = await db.execute(
+      select(
+          func.coalesce(func.avg(StationReview.rating), 0).label("average_rating"),
+          func.count(StationReview.review_id).label("review_count"),
+      ).where(StationReview.station_id == station.station_id)
+  )
+  aggregate = aggregate_result.one()
+
+  return StationReviewSummaryOut(
+      station_id=station.station_id,
+      average_rating=round(float(aggregate.average_rating or 0), 2),
+      review_count=int(aggregate.review_count or 0),
+      my_rating=None,
+      my_review_text=None,
+  )

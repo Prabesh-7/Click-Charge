@@ -38,6 +38,9 @@ export interface UserStation {
   available_chargers: number;
   total_connectors: number;
   available_connectors: number;
+  average_rating: number;
+  review_count: number;
+  my_rating?: number | null;
   charger_types: string[];
   chargers: UserStationCharger[];
   created_at: string;

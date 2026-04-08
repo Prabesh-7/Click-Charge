@@ -6,17 +6,24 @@ import {
   Coffee,
   Eye,
   MapPin,
+  MessageSquare,
   Navigation,
   Phone,
   Plug,
   Plus,
   Search,
+  Star,
   UtensilsCrossed,
   Wifi,
   X,
   Zap,
 } from "lucide-react";
 import { getUserStations, type UserStation } from "@/api/userApi";
+import {
+  getStationReviews,
+  upsertStationReview,
+  type StationReview,
+} from "@/api/stationReviewApi";
 import { getWalletSummary } from "@/api/walletApi";
 import {
   DialogClose,
@@ -138,35 +145,42 @@ export default function FindStations() {
     null,
   );
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [stationReviews, setStationReviews] = useState<StationReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewRating, setReviewRating] = useState<number>(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const fetchStations = async (isInitialLoad = false) => {
+    try {
+      if (isInitialLoad) {
+        setLoading(true);
+      }
+
+      const data = await getUserStations();
+      setStations(data);
+      setError(null);
+      return data;
+    } catch (err: any) {
+      if (isInitialLoad) {
+        console.error(
+          "Failed to load stations:",
+          err.response?.data || err.message,
+        );
+        setError(
+          err.response?.data?.detail ||
+            "Failed to load stations. Please try again.",
+        );
+      }
+      return null;
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
-    const fetchStations = async (isInitialLoad = false) => {
-      try {
-        if (isInitialLoad) {
-          setLoading(true);
-        }
-
-        const data = await getUserStations();
-        setStations(data);
-        setError(null);
-      } catch (err: any) {
-        if (isInitialLoad) {
-          console.error(
-            "Failed to load stations:",
-            err.response?.data || err.message,
-          );
-          setError(
-            err.response?.data?.detail ||
-              "Failed to load stations. Please try again.",
-          );
-        }
-      } finally {
-        if (isInitialLoad) {
-          setLoading(false);
-        }
-      }
-    };
-
     void fetchStations(true);
 
     const intervalId = window.setInterval(() => {
@@ -198,6 +212,65 @@ export default function FindStations() {
       window.clearInterval(walletInterval);
     };
   }, []);
+
+  const loadStationReviews = async (stationId: number) => {
+    try {
+      setReviewsLoading(true);
+      const reviews = await getStationReviews(stationId);
+      setStationReviews(reviews);
+    } catch {
+      setStationReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedStation) {
+      setStationReviews([]);
+      return;
+    }
+
+    setReviewRating(selectedStation.my_rating ?? 0);
+    setReviewText("");
+    void loadStationReviews(selectedStation.station_id);
+  }, [selectedStation]);
+
+  const submitReview = async () => {
+    if (!selectedStation) {
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setError("Please select a rating between 1 and 5 stars.");
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      setError(null);
+
+      await upsertStationReview(selectedStation.station_id, {
+        rating: reviewRating,
+        review_text: reviewText.trim() || undefined,
+      });
+
+      const refreshedStations = await fetchStations(false);
+      const nextStations = refreshedStations ?? stations;
+      const refreshedSelected = nextStations.find(
+        (station) => station.station_id === selectedStation.station_id,
+      );
+      if (refreshedSelected) {
+        setSelectedStation(refreshedSelected);
+      }
+
+      await loadStationReviews(selectedStation.station_id);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Failed to submit review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const requestUserLocation = (): Promise<Coordinates> => {
     return new Promise((resolve, reject) => {
@@ -530,6 +603,21 @@ export default function FindStations() {
                           <MapPin size={12} className="shrink-0" />
                           {station.address}
                         </p>
+                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                            <Star
+                              size={12}
+                              className="fill-amber-400 text-amber-500"
+                            />
+                            {station.review_count > 0
+                              ? station.average_rating.toFixed(1)
+                              : "New"}
+                          </span>
+                          <span className="text-slate-500">
+                            {station.review_count} review
+                            {station.review_count === 1 ? "" : "s"}
+                          </span>
+                        </div>
                       </div>
                       <span
                         className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
@@ -776,6 +864,132 @@ export default function FindStations() {
                             </p>
                           </div>
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Ratings & Reviews
+                      </h3>
+
+                      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                          <p className="text-xs text-amber-700">
+                            Average Rating
+                          </p>
+                          <p className="mt-1 flex items-center gap-1 text-lg font-bold text-amber-800">
+                            <Star
+                              size={16}
+                              className="fill-amber-400 text-amber-500"
+                            />
+                            {selectedStation.review_count > 0
+                              ? selectedStation.average_rating.toFixed(1)
+                              : "No ratings yet"}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                          <p className="text-xs text-slate-500">
+                            Total Reviews
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-800">
+                            {selectedStation.review_count}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Your Rating
+                        </p>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setReviewRating(value)}
+                              className="rounded-md p-1 transition hover:bg-amber-50"
+                              aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
+                            >
+                              <Star
+                                size={18}
+                                className={
+                                  value <= reviewRating
+                                    ? "fill-amber-400 text-amber-500"
+                                    : "text-slate-300"
+                                }
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Your Review
+                      </label>
+                      <textarea
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="Share your charging experience (optional)."
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                      />
+
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="text-xs text-slate-500">
+                          {selectedStation.my_rating
+                            ? `Your last rating: ${selectedStation.my_rating}/5`
+                            : "You have not reviewed this station yet."}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void submitReview()}
+                          disabled={submittingReview}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <MessageSquare size={13} />
+                          {submittingReview ? "Submitting..." : "Submit Review"}
+                        </button>
+                      </div>
+
+                      <div className="mt-4 border-t border-slate-100 pt-4">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Recent Reviews
+                        </p>
+                        {reviewsLoading ? (
+                          <p className="text-sm text-slate-500">
+                            Loading reviews...
+                          </p>
+                        ) : stationReviews.length === 0 ? (
+                          <p className="text-sm text-slate-500">
+                            No reviews yet.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {stationReviews.slice(0, 5).map((review) => (
+                              <div
+                                key={review.review_id}
+                                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="truncate text-xs font-semibold text-slate-700">
+                                    {review.user_name || "User"}
+                                  </p>
+                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+                                    <Star
+                                      size={12}
+                                      className="fill-amber-400 text-amber-500"
+                                    />
+                                    {review.rating}/5
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-xs text-slate-600">
+                                  {review.review_text || "No comment provided."}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 

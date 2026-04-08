@@ -8,6 +8,7 @@ import {
   MapPinned,
   Package,
   ReceiptText,
+  Star,
   Settings2,
   SlidersHorizontal,
   Sparkles,
@@ -108,6 +109,12 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
       label: "Station Details",
       path: "/manager/stationDetails",
       icon: MapPinned,
+      section: "Stations",
+    },
+    {
+      label: "Station Reviews",
+      path: "/manager/stationReviews",
+      icon: Star,
       section: "Stations",
     },
     {

@@ -9,6 +9,7 @@ from app.schemas.charging_session import ChargingSessionOut
 from app.schemas.reservation import ReservationOut
 from app.schemas.slot import SlotCreate, SlotOut, SlotUpdate
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
+from app.schemas.station_review import ManagerStationReviewOut, StationReviewSummaryOut
 from app.schemas.wallet import WalletOut
 from app.schemas.userValidation import UserCreate, UserOut
 from app.services.charger_service import (
@@ -33,6 +34,8 @@ from app.services.manager_service import (
     delete_staff_for_manager,
     update_manager_station_details,
     upload_station_image_for_manager,
+    get_station_reviews_for_manager,
+    get_station_review_summary_for_manager,
 )
 from app.services.slot_service import (
     create_slot_by_manager,
@@ -78,6 +81,22 @@ async def get_my_station(
     Get station details for the current manager.
     """
     return await get_manager_station_details(current_manager, db)
+
+
+@router.get("/station-reviews", response_model=List[ManagerStationReviewOut])
+async def get_my_station_reviews(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_station_reviews_for_manager(current_manager, db)
+
+
+@router.get("/station-reviews/summary", response_model=StationReviewSummaryOut)
+async def get_my_station_review_summary(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_station_review_summary_for_manager(current_manager, db)
 
 
 @router.get("/wallet", response_model=WalletOut)

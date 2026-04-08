@@ -143,6 +143,24 @@ export interface ChargingSessionItem {
   invoice_total_amount: number | null;
 }
 
+export interface ManagerStationReview {
+  review_id: number;
+  station_id: number;
+  user_id: number;
+  user_name?: string | null;
+  user_email?: string | null;
+  rating: number;
+  review_text?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManagerStationReviewSummary {
+  station_id: number;
+  average_rating: number;
+  review_count: number;
+}
+
 const authHeader = () => {
   const token = localStorage.getItem("access_token");
   return {
@@ -200,6 +218,22 @@ export const getMyStation = async () => {
   );
 
   return response.data;
+};
+
+export const getManagerStationReviews = async (): Promise<ManagerStationReview[]> => {
+  const response = await api.get("/manager/station-reviews", {
+    headers: authHeader(),
+  });
+
+  return response.data as ManagerStationReview[];
+};
+
+export const getManagerStationReviewSummary = async (): Promise<ManagerStationReviewSummary> => {
+  const response = await api.get("/manager/station-reviews/summary", {
+    headers: authHeader(),
+  });
+
+  return response.data as ManagerStationReviewSummary;
 };
 
 export const getManagerWallet = async (): Promise<ManagerWallet> => {

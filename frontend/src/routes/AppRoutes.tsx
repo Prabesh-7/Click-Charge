@@ -22,6 +22,7 @@ import AddStaff from "@/features/manager/pages/AddStaff";
 import MyChargers from "@/features/manager/pages/MyChargers";
 import ChargerControl from "@/features/manager/pages/ChargerControl";
 import StationDetails from "@/features/manager/pages/StationDetails";
+import StationReviews from "@/features/manager/pages/StationReviews";
 import ManageSlots from "@/features/manager/pages/ManageSlots";
 import SlotList from "@/features/manager/pages/SlotList";
 import Pricing from "@/features/manager/pages/Pricing";
@@ -72,6 +73,7 @@ export default function AppRoutes() {
       <Route path="/manager" element={<DashboardLayout />}>
         <Route path="dashboard" element={<ManagerDashboard />} />
         <Route path="stationDetails" element={<StationDetails />} />
+        <Route path="stationReviews" element={<StationReviews />} />
         <Route path="addCharger" element={<AddCharger />} />
         <Route path="addStaff" element={<AddStaff />} />
         <Route path="myStaff" element={<MyStaff />} />

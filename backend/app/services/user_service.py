@@ -97,6 +97,7 @@ from app.schemas.userValidation import UserLogin
 from app.utils.jwt import create_access_token
 from app.schemas.userValidation import TokenData
 from app.schemas.user_station import UserStationOut, UserStationChargerOut, UserStationConnectorOut
+from app.services.station_review_service import get_station_review_aggregates
 
 
 async def login_user(user: UserLogin, db: AsyncSession):
@@ -151,7 +152,10 @@ async def register_user(user: UserCreate, db: AsyncSession):
     return new_user
 
 
-async def get_available_stations_for_user(db: AsyncSession) -> list[UserStationOut]:
+async def get_available_stations_for_user(
+    db: AsyncSession,
+    current_user_id: int | None = None,
+) -> list[UserStationOut]:
     station_result = await db.execute(
         select(
             Station.station_id,
@@ -178,6 +182,8 @@ async def get_available_stations_for_user(db: AsyncSession) -> list[UserStationO
         return []
 
     station_ids = [station["station_id"] for station in stations]
+
+    aggregate_map, my_rating_map = await get_station_review_aggregates(station_ids, current_user_id, db)
 
     charger_result = await db.execute(
         select(Charger)
@@ -273,6 +279,9 @@ async def get_available_stations_for_user(db: AsyncSession) -> list[UserStationO
                 available_chargers=available_chargers,
                 total_connectors=total_connectors,
                 available_connectors=available_connectors,
+                average_rating=aggregate_map.get(station_id, (0.0, 0))[0],
+                review_count=aggregate_map.get(station_id, (0.0, 0))[1],
+                my_rating=my_rating_map.get(station_id),
                 charger_types=sorted(charger_types),
                 chargers=chargers_out,
                 created_at=station["created_at"],

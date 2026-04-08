@@ -5,9 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerControlResponse
+from app.schemas.station_review import StationReviewCreate, StationReviewOut, StationReviewSummaryOut
 from app.schemas.slot import SlotOut
 from app.schemas.user_station import UserStationOut
 from app.services.user_service import get_available_stations_for_user
+from app.services.station_review_service import (
+    upsert_station_review,
+    get_station_reviews,
+    get_station_review_summary,
+)
 from app.services.charger_service import reserve_connector_by_user, cancel_user_reservation
 from app.services.slot_service import get_slots_by_station, reserve_slot_by_user, cancel_slot_reservation_by_user
 from app.utils.dependencies import get_current_user
@@ -23,7 +29,7 @@ async def get_available_stations(
     """
     Get all available stations for authenticated users.
     """
-    return await get_available_stations_for_user(db)
+    return await get_available_stations_for_user(db, current_user.user_id)
 
 
 @router.post("/chargers/{charger_id}/reserve", response_model=ChargerControlResponse)
@@ -72,3 +78,31 @@ async def cancel_slot_reservation(
     db: AsyncSession = Depends(get_db),
 ):
     return await cancel_slot_reservation_by_user(slot_id, current_user, db)
+
+
+@router.post("/stations/{station_id}/review", response_model=StationReviewOut)
+async def create_or_update_station_review(
+    station_id: int,
+    data: StationReviewCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await upsert_station_review(station_id, data, current_user, db)
+
+
+@router.get("/stations/{station_id}/reviews", response_model=list[StationReviewOut])
+async def list_station_reviews(
+    station_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_station_reviews(station_id, db)
+
+
+@router.get("/stations/{station_id}/reviews/summary", response_model=StationReviewSummaryOut)
+async def get_reviews_summary(
+    station_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_station_review_summary(station_id, current_user, db)
