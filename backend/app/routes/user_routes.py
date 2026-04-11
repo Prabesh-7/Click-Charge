@@ -8,7 +8,8 @@ from app.schemas.charger import ChargerControlResponse
 from app.schemas.station_review import StationReviewCreate, StationReviewOut, StationReviewSummaryOut
 from app.schemas.slot import SlotOut
 from app.schemas.user_station import UserStationOut
-from app.services.user_service import get_available_stations_for_user
+from app.schemas.userValidation import UserOut, UserProfileUpdate
+from app.services.user_service import get_available_stations_for_user, update_user_profile
 from app.services.station_review_service import (
     upsert_station_review,
     get_station_reviews,
@@ -19,6 +20,22 @@ from app.services.slot_service import get_slots_by_station, reserve_slot_by_user
 from app.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/user", tags=["User"])
+
+
+@router.get("/profile", response_model=UserOut)
+async def get_user_profile(
+    current_user: User = Depends(get_current_user),
+):
+    return current_user
+
+
+@router.patch("/profile", response_model=UserOut)
+async def patch_user_profile(
+    payload: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await update_user_profile(current_user, payload, db)
 
 
 @router.get("/stations", response_model=list[UserStationOut])

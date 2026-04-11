@@ -73,6 +73,40 @@ export interface StationSlot {
   updated_at: string;
 }
 
+export interface UserProfile {
+  user_id: number;
+  user_name: string;
+  email: string;
+  role: string;
+  phone_number?: string | null;
+  vehicle?: string | null;
+  station_id?: number | null;
+  created_at: string;
+}
+
+export interface UpdateUserProfilePayload {
+  user_name?: string;
+  email?: string;
+  phone_number?: string | null;
+  vehicle?: string | null;
+}
+
+export const getUserProfile = async (): Promise<UserProfile> => {
+  const { data } = await api.get<UserProfile>("/user/profile", {
+    headers: authHeader(),
+  });
+  return data;
+};
+
+export const updateUserProfile = async (
+  payload: UpdateUserProfilePayload,
+): Promise<UserProfile> => {
+  const { data } = await api.patch<UserProfile>("/user/profile", payload, {
+    headers: authHeader(),
+  });
+  return data;
+};
+
 export const getUserStations = async () => {
   const response = await api.get("/user/stations", {
     headers: authHeader(),

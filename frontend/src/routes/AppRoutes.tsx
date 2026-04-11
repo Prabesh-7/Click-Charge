@@ -12,6 +12,7 @@ import WalletDashboard from "@/features/user/pages/WalletDashboard";
 import EsewaPaymentPage from "@/features/user/pages/EsewaPaymentPage";
 import PaymentSuccess from "@/features/user/pages/PaymentSuccess";
 import PaymentFailure from "@/features/user/pages/PaymentFailure";
+import UserProfilePage from "@/features/user/pages/UserProfile";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 
 import AddStations from "@/features/admin/pages/AddStations";
@@ -54,6 +55,7 @@ export default function AppRoutes() {
           element={<StationAvailability />}
         />
         <Route path="stations/:stationId/slots" element={<StationSlots />} />
+        <Route path="profile" element={<UserProfilePage />} />
         <Route path="wallet" element={<WalletDashboard />} />
         <Route path="wallet/add-funds/esewa" element={<EsewaPaymentPage />} />
         <Route path="wallet/payment-success" element={<PaymentSuccess />} />

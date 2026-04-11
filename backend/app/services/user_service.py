@@ -94,6 +94,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 from app.schemas.userValidation import UserLogin
+from app.schemas.userValidation import UserProfileUpdate
 from app.utils.jwt import create_access_token
 from app.schemas.userValidation import TokenData
 from app.schemas.user_station import UserStationOut, UserStationChargerOut, UserStationConnectorOut
@@ -289,3 +290,32 @@ async def get_available_stations_for_user(
         )
 
     return station_out
+
+
+async def update_user_profile(
+    current_user: User,
+    payload: UserProfileUpdate,
+    db: AsyncSession,
+) -> User:
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if not update_data:
+        return current_user
+
+    next_email = update_data.get("email")
+    if next_email and next_email != current_user.email:
+        result = await db.execute(
+            select(User).where(User.email == next_email, User.user_id != current_user.user_id)
+        )
+        existing_user = result.scalar_one_or_none()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+    for field in ["user_name", "email", "phone_number", "vehicle"]:
+        if field in update_data:
+            setattr(current_user, field, update_data[field])
+
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user

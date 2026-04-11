@@ -3,6 +3,7 @@ import {
   Bath,
   BedDouble,
   Car,
+  CircleUserRound,
   Coffee,
   Eye,
   MapPin,
@@ -41,6 +42,52 @@ type Coordinates = {
   latitude: number;
   longitude: number;
 };
+
+type AmenityItem = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  icon: typeof Wifi;
+};
+
+const buildAmenities = (station: UserStation): AmenityItem[] => [
+  {
+    key: "wifi",
+    label: "WiFi",
+    enabled: station.has_wifi,
+    icon: Wifi,
+  },
+  {
+    key: "parking",
+    label: "Parking",
+    enabled: station.has_parking,
+    icon: Car,
+  },
+  {
+    key: "food",
+    label: "Food",
+    enabled: station.has_food,
+    icon: UtensilsCrossed,
+  },
+  {
+    key: "coffee",
+    label: "Coffee",
+    enabled: station.has_coffee,
+    icon: Coffee,
+  },
+  {
+    key: "bedroom",
+    label: "Bedroom",
+    enabled: station.has_bedroom,
+    icon: BedDouble,
+  },
+  {
+    key: "restroom",
+    label: "Restroom",
+    enabled: station.has_restroom,
+    icon: Bath,
+  },
+];
 
 const toRadians = (value: number) => (value * Math.PI) / 180;
 
@@ -397,12 +444,12 @@ export default function FindStations() {
   const busyCount = stations.filter((s) => s.available_connectors === 0).length;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-6 md:py-10">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#dff4e9_0%,#f8fafc_40%,#f8fafc_100%)] px-4 py-6 md:px-6 md:py-10">
       <div className="mx-auto max-w-7xl">
-        <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-end lg:justify-between">
+        <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-5 border-b border-slate-100 px-5 py-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Live network
               </div>
@@ -413,6 +460,16 @@ export default function FindStations() {
                 Search nearby charging stations, compare availability, and open
                 directions in a simple layout that stays easy to read.
               </p>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate("/user/profile")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  <CircleUserRound size={16} />
+                  My Profile
+                </button>
+              </div>
             </div>
 
             {!loading && stations.length > 0 && (
@@ -421,22 +478,22 @@ export default function FindStations() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                     Wallet Balance
                   </p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">
+                  <p className="mt-1 text-xl font-bold text-slate-900">
                     Rs{" "}
                     {walletBalance === null ? "..." : walletBalance.toFixed(2)}
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => navigate("/user/wallet")}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                >
-                  <Plus size={15} strokeWidth={2.5} />
-                  Add Balance
-                </button>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Station Health
+                  </p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">
+                    {stations.length} stations live
+                  </p>
+                </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:col-span-2 sm:justify-end">
+                <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     {availableCount} available
@@ -445,6 +502,14 @@ export default function FindStations() {
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                     {busyCount} busy
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/user/wallet")}
+                    className="ml-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  >
+                    <Plus size={14} strokeWidth={2.3} />
+                    Manage Wallet
+                  </button>
                 </div>
               </div>
             )}
@@ -521,49 +586,11 @@ export default function FindStations() {
               const plugTypes = (station.charger_types ?? []).filter(
                 (plugType) => Boolean(plugType?.trim()),
               );
+              const amenities = buildAmenities(station);
               const hasValidCoordinates =
                 Number.isFinite(station.latitude) &&
                 Number.isFinite(station.longitude);
               const mapKey = `${station.station_id}-${station.latitude}-${station.longitude}`;
-
-              const amenities = [
-                {
-                  key: "wifi",
-                  label: "WiFi",
-                  enabled: station.has_wifi,
-                  icon: Wifi,
-                },
-                {
-                  key: "parking",
-                  label: "Parking",
-                  enabled: station.has_parking,
-                  icon: Car,
-                },
-                {
-                  key: "food",
-                  label: "Food",
-                  enabled: station.has_food,
-                  icon: UtensilsCrossed,
-                },
-                {
-                  key: "coffee",
-                  label: "Coffee",
-                  enabled: station.has_coffee,
-                  icon: Coffee,
-                },
-                {
-                  key: "bedroom",
-                  label: "Bedroom",
-                  enabled: station.has_bedroom,
-                  icon: BedDouble,
-                },
-                {
-                  key: "restroom",
-                  label: "Restroom",
-                  enabled: station.has_restroom,
-                  icon: Bath,
-                },
-              ];
 
               return (
                 <article
@@ -796,40 +823,6 @@ export default function FindStations() {
 
                 <ScrollArea className="h-[70vh] bg-slate-50/60">
                   <div className="space-y-5 px-6 py-5 pb-6">
-                    {selectedStation.station_images.length > 0 && (
-                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="border-b border-slate-200 px-4 py-3">
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Station Images
-                          </h3>
-                          <p className="mt-1 text-xs text-gray-400">
-                            Photos of the station and charging area.
-                          </p>
-                        </div>
-                        <div className="grid gap-2 p-3 sm:grid-cols-2">
-                          {selectedStation.station_images.map(
-                            (imageUrl, index) => (
-                              <div
-                                key={imageUrl}
-                                className={`overflow-hidden rounded-xl border border-slate-100 bg-slate-100 ${
-                                  index === 0 &&
-                                  selectedStation.station_images.length > 1
-                                    ? "sm:col-span-2 h-56"
-                                    : "h-36"
-                                }`}
-                              >
-                                <img
-                                  src={imageUrl}
-                                  alt={`${selectedStation.station_name} ${index + 1}`}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    )}
-
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Station Details
@@ -1019,63 +1012,31 @@ export default function FindStations() {
                       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Amenities
                       </h3>
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {[
-                          {
-                            key: "wifi",
-                            label: "WiFi",
-                            enabled: selectedStation.has_wifi,
-                            icon: Wifi,
-                          },
-                          {
-                            key: "parking",
-                            label: "Parking",
-                            enabled: selectedStation.has_parking,
-                            icon: Car,
-                          },
-                          {
-                            key: "food",
-                            label: "Food",
-                            enabled: selectedStation.has_food,
-                            icon: UtensilsCrossed,
-                          },
-                          {
-                            key: "coffee",
-                            label: "Coffee",
-                            enabled: selectedStation.has_coffee,
-                            icon: Coffee,
-                          },
-                          {
-                            key: "bedroom",
-                            label: "Bedroom",
-                            enabled: selectedStation.has_bedroom,
-                            icon: BedDouble,
-                          },
-                          {
-                            key: "restroom",
-                            label: "Restroom",
-                            enabled: selectedStation.has_restroom,
-                            icon: Bath,
-                          },
-                        ].map((amenity) => {
-                          const AmenityIcon = amenity.icon;
-                          return (
-                            <div
-                              key={amenity.key}
-                              className={`rounded-lg border px-3 py-2 text-xs font-medium ${
-                                amenity.enabled
-                                  ? "border-[#22C55E]/20 bg-[#22C55E]/10 text-[#22C55E]"
-                                  : "border-gray-200 bg-gray-50 text-gray-500"
-                              }`}
-                            >
-                              <span className="inline-flex items-center gap-1.5">
-                                <AmenityIcon size={13} />
-                                {amenity.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {(() => {
+                        const amenities = buildAmenities(selectedStation);
+                        return (
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {amenities.map((amenity) => {
+                              const AmenityIcon = amenity.icon;
+                              return (
+                                <div
+                                  key={amenity.key}
+                                  className={`rounded-lg border px-3 py-2 text-xs font-medium ${
+                                    amenity.enabled
+                                      ? "border-[#22C55E]/20 bg-[#22C55E]/10 text-[#22C55E]"
+                                      : "border-gray-200 bg-gray-50 text-gray-500"
+                                  }`}
+                                >
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <AmenityIcon size={13} />
+                                    {amenity.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1087,6 +1048,40 @@ export default function FindStations() {
                           "No station description available."}
                       </p>
                     </div>
+
+                    {selectedStation.station_images.length > 0 && (
+                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-200 px-4 py-3">
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Station Images
+                          </h3>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Photos of the station and charging area.
+                          </p>
+                        </div>
+                        <div className="grid gap-2 p-3 sm:grid-cols-2">
+                          {selectedStation.station_images.map(
+                            (imageUrl, index) => (
+                              <div
+                                key={imageUrl}
+                                className={`overflow-hidden rounded-xl border border-slate-100 bg-slate-100 ${
+                                  index === 0 &&
+                                  selectedStation.station_images.length > 1
+                                    ? "sm:col-span-2 h-56"
+                                    : "h-36"
+                                }`}
+                              >
+                                <img
+                                  src={imageUrl}
+                                  alt={`${selectedStation.station_name} ${index + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
               </>

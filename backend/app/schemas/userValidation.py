@@ -26,6 +26,13 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
+class UserProfileUpdate(BaseModel):
+    user_name: Optional[str] = Field(default=None, min_length=3, max_length=100)
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    vehicle: Optional[str] = None
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
