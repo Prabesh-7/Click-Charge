@@ -84,6 +84,10 @@
 #     return new_user
 
 
+import os
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.models.stations import Station
@@ -93,12 +97,22 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
-from app.schemas.userValidation import UserLogin
+from jose import JWTError
+from app.schemas.userValidation import UserLogin, ForgotPasswordRequest, VerifyResetOtpRequest, ResetPasswordRequest
 from app.schemas.userValidation import UserProfileUpdate
-from app.utils.jwt import create_access_token
+from app.utils.jwt import create_access_token, create_password_reset_session_token, decode_password_reset_session_token
 from app.schemas.userValidation import TokenData
 from app.schemas.user_station import UserStationOut, UserStationChargerOut, UserStationConnectorOut
 from app.services.station_review_service import get_station_review_aggregates
+from app.services.notification_service import EmailDeliveryError, send_password_reset_otp_email
+from app.utils.security import hash_password, verify_password
+
+
+PASSWORD_RESET_OTP_EXPIRY_MINUTES = int(os.getenv("PASSWORD_RESET_OTP_EXPIRY_MINUTES", "10"))
+
+
+def _generate_password_reset_otp() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 async def login_user(user: UserLogin, db: AsyncSession):
@@ -109,9 +123,16 @@ async def login_user(user: UserLogin, db: AsyncSession):
     db_user = result.scalar_one_or_none()
     
 
-
-    if not db_user or db_user.password != user.password:
+    if not db_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    if not verify_password(user.password, db_user.password):
+        if db_user.password != user.password:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        db_user.password = hash_password(user.password)
+        await db.commit()
+        await db.refresh(db_user)
 
     token_data = TokenData(
         user_id=db_user.user_id,
@@ -141,7 +162,7 @@ async def register_user(user: UserCreate, db: AsyncSession):
     new_user = User(
         user_name=user.user_name,
         email=user.email,
-        password=user.password,
+        password=hash_password(user.password),
         phone_number=user.phone_number,
         vehicle=user.vehicle
     )
@@ -151,6 +172,88 @@ async def register_user(user: UserCreate, db: AsyncSession):
     await db.refresh(new_user)
 
     return new_user
+
+
+async def request_password_reset(payload: ForgotPasswordRequest, db: AsyncSession) -> dict:
+    result = await db.execute(
+        select(User).where(User.email == payload.email)
+    )
+    db_user = result.scalar_one_or_none()
+
+    if not db_user:
+        return {"message": "If an account exists for that email, a reset code has been sent."}
+
+    otp = _generate_password_reset_otp()
+    db_user.password_reset_otp_hash = hash_password(otp)
+    db_user.password_reset_otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_OTP_EXPIRY_MINUTES)
+
+    await db.commit()
+
+    try:
+        await send_password_reset_otp_email(
+            recipient_email=db_user.email,
+            recipient_name=db_user.user_name,
+            otp=otp,
+            expiry_minutes=PASSWORD_RESET_OTP_EXPIRY_MINUTES,
+        )
+    except EmailDeliveryError as exc:
+        db_user.password_reset_otp_hash = None
+        db_user.password_reset_otp_expires_at = None
+        await db.commit()
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"message": "If an account exists for that email, a reset code has been sent."}
+
+
+async def verify_password_reset_otp(payload: VerifyResetOtpRequest, db: AsyncSession) -> dict:
+    result = await db.execute(
+        select(User).where(User.email == payload.email)
+    )
+    db_user = result.scalar_one_or_none()
+
+    if not db_user or not db_user.password_reset_otp_hash or not db_user.password_reset_otp_expires_at:
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset code")
+
+    if db_user.password_reset_otp_expires_at < datetime.now(timezone.utc):
+        db_user.password_reset_otp_hash = None
+        db_user.password_reset_otp_expires_at = None
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset code")
+
+    if not verify_password(payload.otp, db_user.password_reset_otp_hash):
+        raise HTTPException(status_code=400, detail="Invalid or expired password reset code")
+
+    db_user.password_reset_otp_hash = None
+    db_user.password_reset_otp_expires_at = None
+    await db.commit()
+
+    reset_token = create_password_reset_session_token(db_user.email)
+
+    return {
+        "message": "OTP verified successfully",
+        "reset_token": reset_token,
+    }
+
+
+async def reset_password(payload: ResetPasswordRequest, db: AsyncSession) -> dict:
+    try:
+        email = decode_password_reset_session_token(payload.reset_token)
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset session")
+
+    result = await db.execute(
+        select(User).where(User.email == email)
+    )
+    db_user = result.scalar_one_or_none()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.password = hash_password(payload.new_password)
+    await db.commit()
+    await db.refresh(db_user)
+
+    return {"message": "Password reset successfully"}
 
 
 async def get_available_stations_for_user(

@@ -127,6 +127,14 @@ export default function Login() {
                   {errors.password.message}
                 </p>
               )}
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm font-medium text-secondary_brand hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </Field>
 
             <Button

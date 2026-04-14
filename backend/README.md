@@ -15,3 +15,16 @@ Set these environment variables in `backend/.env`:
 - `SMTP_TIMEOUT_SECONDS`
 
 The manager endpoint is `POST /manager/slots/{slot_id}/send-confirmation`.
+
+## Password reset email
+
+Users can request a password reset from the login page.
+
+The reset flow uses a one-time code sent over SMTP. No extra reset-specific env keys are needed beyond the SMTP settings.
+
+Optional: set `PASSWORD_RESET_OTP_EXPIRY_MINUTES` to change the code lifetime. Default is `10`.
+
+The auth endpoints are:
+
+- `POST /forgot-password`
+- `POST /reset-password`

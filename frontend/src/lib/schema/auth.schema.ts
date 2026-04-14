@@ -38,3 +38,37 @@ export const loginSchema = z.object({
 });
 
 export type LoginSchema = z.infer<typeof loginSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>;
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
+});
+
+export type VerifyOtpSchema = z.infer<typeof verifyOtpSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    new_password: z
+      .string()
+      .min(8, "Password must be at least 8 characters"),
+    confirm_password: z
+      .string()
+      .min(8, "Password must be at least 8 characters"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords do not match",
+    path: ["confirm_password"],
+  });
+
+export type ResetPasswordSchema = z.infer<typeof resetPasswordSchema>;
+
+export type ResetPasswordRequestPayload = {
+  reset_token: string;
+  new_password: string;
+};

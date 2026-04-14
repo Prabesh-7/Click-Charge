@@ -12,6 +12,7 @@ from app.models.station_review import StationReview
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
 from app.schemas.station_review import ManagerStationReviewOut, StationReviewSummaryOut
 from app.schemas.userValidation import UserCreate, UserOut
+from app.utils.security import hash_password
 from typing import List
 
 
@@ -48,7 +49,7 @@ async def create_staff_for_manager(
   staff = User(
       user_name=data.user_name,
       email=data.email,
-      password=data.password,
+      password=hash_password(data.password),
       phone_number=data.phone_number,
       vehicle=data.vehicle,
       role=UserRole.STAFF,
@@ -273,7 +274,7 @@ async def edit_staff_for_manager(
   if data.email:
       staff.email = data.email
   if data.password:
-      staff.password = data.password
+      staff.password = hash_password(data.password)
   if data.phone_number:
       staff.phone_number = data.phone_number
   if data.vehicle:

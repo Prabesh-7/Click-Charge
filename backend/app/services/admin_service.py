@@ -7,6 +7,7 @@ from app.models.user import User, UserRole
 from app.models.stations import Station
 from app.models.chargers import Charger
 from app.schemas.manager_station import ManagerWithStationCreate, StationOut, StationCreate
+from app.utils.security import hash_password
 
 
 
@@ -22,7 +23,7 @@ async def create_manager_with_station(data: ManagerWithStationCreate, db: AsyncS
     manager = User(
         user_name=data.manager.user_name,
         email=data.manager.email,
-        password=data.manager.password,
+        password=hash_password(data.manager.password),
         phone_number=data.manager.phone_number,
         role=UserRole.MANAGER
     )

@@ -89,3 +89,22 @@ async def send_email(subject: str, recipient_email: str, body_text: str) -> None
         await asyncio.to_thread(_send_email_sync, message)
     except Exception as exc:  # pragma: no cover - surfaced as HTTP error by caller
         raise EmailDeliveryError(f"Failed to send email: {exc}") from exc
+
+
+async def send_password_reset_otp_email(
+    recipient_email: str,
+    recipient_name: str,
+    otp: str,
+    expiry_minutes: int,
+) -> None:
+    subject = "Your Click&Charge password reset code"
+    body = (
+        f"Hello {recipient_name},\n\n"
+        f"We received a request to reset your Click&Charge password.\n\n"
+        f"Your one-time password reset code is: {otp}\n\n"
+        f"This code expires in {expiry_minutes} minutes. If you did not request a password reset, you can safely ignore this email.\n\n"
+        f"Thank you,\n"
+        f"Click&Charge"
+    )
+
+    await send_email(subject=subject, recipient_email=recipient_email, body_text=body)

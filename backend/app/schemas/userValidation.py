@@ -44,6 +44,29 @@ class TokenData(BaseModel):
     email: str
     role: str
 
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyResetOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str = Field(..., min_length=16)
+    new_password: str = Field(..., min_length=8)
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+class VerifyResetOtpResponse(MessageResponse):
+    reset_token: str
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str    
