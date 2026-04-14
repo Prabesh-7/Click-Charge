@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getManagerSlots,
   releaseManagerSlotReservation,
+  sendManagerSlotConfirmation,
   type Slot,
 } from "@/api/managerApi";
 
@@ -69,9 +70,12 @@ const formatDuration = (startTime: string, endTime: string) => {
 export default function Reservations() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const getActionKey = (slotId: number, action: "release" | "confirm") =>
+    `${slotId}:${action}`;
 
   const reservedSlots = useMemo(
     () =>
@@ -151,7 +155,7 @@ export default function Reservations() {
 
   const handleRelease = async (slotId: number) => {
     try {
-      setActionLoadingId(slotId);
+      setActionLoadingKey(getActionKey(slotId, "release"));
       setError(null);
       setSuccess(null);
       await releaseManagerSlotReservation(slotId);
@@ -160,7 +164,24 @@ export default function Reservations() {
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to release reservation.");
     } finally {
-      setActionLoadingId(null);
+      setActionLoadingKey(null);
+    }
+  };
+
+  const handleSendConfirmation = async (slotId: number) => {
+    try {
+      setActionLoadingKey(getActionKey(slotId, "confirm"));
+      setError(null);
+      setSuccess(null);
+      await sendManagerSlotConfirmation(slotId);
+      setSuccess("Confirmation email sent successfully.");
+      await fetchSlots();
+    } catch (err: any) {
+      setError(
+        err.response?.data?.detail || "Failed to send confirmation email.",
+      );
+    } finally {
+      setActionLoadingKey(null);
     }
   };
 
@@ -299,6 +320,9 @@ export default function Reservations() {
                             <p className="mt-1 text-sm text-gray-700">
                               {slot.reserved_by_phone_number || "Not provided"}
                             </p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {slot.reserved_by_email || "No email available"}
+                            </p>
                           </div>
 
                           <div>
@@ -319,11 +343,28 @@ export default function Reservations() {
                             </span>
                             <button
                               type="button"
+                              onClick={() =>
+                                void handleSendConfirmation(slot.slot_id)
+                              }
+                              disabled={
+                                actionLoadingKey !== null ||
+                                !slot.reserved_by_email
+                              }
+                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                            >
+                              {actionLoadingKey ===
+                              getActionKey(slot.slot_id, "confirm")
+                                ? "Sending..."
+                                : "Send confirmation"}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => void handleRelease(slot.slot_id)}
-                              disabled={actionLoadingId === slot.slot_id}
+                              disabled={actionLoadingKey !== null}
                               className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-50"
                             >
-                              {actionLoadingId === slot.slot_id
+                              {actionLoadingKey ===
+                              getActionKey(slot.slot_id, "release")
                                 ? "Releasing..."
                                 : "Release"}
                             </button>

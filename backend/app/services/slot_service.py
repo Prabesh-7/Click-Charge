@@ -12,6 +12,7 @@ from app.services.reservation_service import (
     close_active_slot_reservations,
     create_slot_reservation_record,
 )
+from app.services.notification_service import EmailDeliveryError, send_email
 from app.services.wallet_service import debit_wallet_for_slot_reservation, SLOT_RESERVATION_FEE
 
 
@@ -357,6 +358,83 @@ async def release_slot_reservation_by_manager(
     await db.commit()
 
     return {"message": "Slot reservation released successfully"}
+
+
+async def _get_manager_reserved_slot_details(
+    slot_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    result = await db.execute(
+        select(
+            ConnectorSlot.slot_id,
+            ConnectorSlot.start_time,
+            ConnectorSlot.end_time,
+            ConnectorSlot.status,
+            Connector.connector_number,
+            Charger.name.label("charger_name"),
+            Station.station_name,
+            Station.address,
+            func.coalesce(ConnectorSlot.reserved_by_user_name, User.user_name).label("reserved_by_user_name"),
+            func.coalesce(ConnectorSlot.reserved_by_email, User.email).label("reserved_by_email"),
+        )
+        .join(Connector, Connector.connector_id == ConnectorSlot.connector_id)
+        .join(Charger, Charger.charger_id == Connector.charger_id)
+        .join(Station, Station.station_id == Charger.station_id)
+        .outerjoin(User, User.user_id == ConnectorSlot.reserved_by_user_id)
+        .where(
+            ConnectorSlot.slot_id == slot_id,
+            Station.manager_id == current_manager.user_id,
+        )
+    )
+    slot = result.mappings().first()
+
+    if not slot:
+        raise HTTPException(status_code=404, detail="Slot not found")
+
+    return dict(slot)
+
+
+def _format_confirmation_datetime(value: datetime) -> str:
+    normalized = value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    return normalized.strftime("%d %b %Y, %I:%M %p UTC")
+
+
+async def send_slot_confirmation_email_by_manager(
+    slot_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    slot = await _get_manager_reserved_slot_details(slot_id, current_manager, db)
+
+    if slot["status"] != SlotStatus.RESERVED:
+        raise HTTPException(status_code=400, detail="Slot is not reserved")
+
+    recipient_email = slot.get("reserved_by_email")
+    if not recipient_email:
+        raise HTTPException(status_code=400, detail="No email address available for this reservation")
+
+    recipient_name = slot.get("reserved_by_user_name") or "Customer"
+    subject = f"Click&Charge reservation confirmed for {slot['charger_name']}"
+    body = (
+        f"Hello {recipient_name},\n\n"
+        f"Your reservation has been confirmed by the station manager.\n\n"
+        f"Station: {slot['station_name']}\n"
+        f"Address: {slot['address']}\n"
+        f"Charger: {slot['charger_name']}\n"
+        f"Connector: {slot['connector_number']}\n"
+        f"Time: {_format_confirmation_datetime(slot['start_time'])} - {_format_confirmation_datetime(slot['end_time'])}\n\n"
+        f"Please arrive on time and keep this email for reference.\n\n"
+        f"Thank you,\n"
+        f"Click&Charge"
+    )
+
+    try:
+        await send_email(subject=subject, recipient_email=str(recipient_email), body_text=body)
+    except EmailDeliveryError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"message": "Reservation confirmation email sent successfully"}
 
 
 async def _get_staff_slot(

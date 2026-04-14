@@ -403,6 +403,13 @@ export const releaseManagerSlotReservation = async (slotId: number) => {
   return response.data;
 };
 
+export const sendManagerSlotConfirmation = async (slotId: number) => {
+  const response = await api.post(`/manager/slots/${slotId}/send-confirmation`, {}, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
 export const updateCharger = async (chargerId: number, data: CreateChargerSchema) => {
   const response = await api.put(
     `/manager/chargers/${chargerId}`,
