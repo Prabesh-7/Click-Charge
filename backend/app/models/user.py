@@ -43,7 +43,7 @@ class User(Base):
 
 async def create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(lambda sync_conn: User.__table__.create(sync_conn, checkfirst=True))
 
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_otp_hash VARCHAR(255)"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_otp_expires_at TIMESTAMPTZ"))

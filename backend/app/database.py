@@ -7,7 +7,8 @@ import os
 import urllib.parse
 
 # Load environment variables from .env
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Get DB credentials
 DB_USER = os.getenv("DB_USER")

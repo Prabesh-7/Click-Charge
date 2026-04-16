@@ -29,7 +29,7 @@ class StationReview(Base):
 
 async def create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(lambda sync_conn: StationReview.__table__.create(sync_conn, checkfirst=True))
 
         # Idempotent compatibility fix if old DBs have this table without review_text.
         await conn.execute(

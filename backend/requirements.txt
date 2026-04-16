@@ -14,3 +14,4 @@ asyncpg
 argon2-cffi
 geoalchemy2
 python-multipart
+google-auth

@@ -54,7 +54,7 @@ class Reservation(Base):
 
 async def create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(lambda sync_conn: Reservation.__table__.create(sync_conn, checkfirst=True))
 
         # Keep schema in sync for existing databases without full migrations.
         await conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS reserved_by_user_name VARCHAR(100)"))

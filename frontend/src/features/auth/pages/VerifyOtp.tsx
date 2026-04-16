@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useNavigate,
@@ -10,13 +10,18 @@ import {
 
 import LoginImg from "../../../assets/LoginImg.jpg";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { verifyResetOtp } from "@/api/authApi";
 import {
   verifyOtpSchema,
   type VerifyOtpSchema,
 } from "@/lib/schema/auth.schema";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { ArrowLeft, KeyRound, Zap } from "lucide-react";
 
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
@@ -28,6 +33,7 @@ export default function VerifyOtpPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<VerifyOtpSchema>({
@@ -51,67 +57,130 @@ export default function VerifyOtpPage() {
   };
 
   return (
-    <main className="container mx-auto mt-20">
-      <div className="flex">
-        <div>
-          <img src={LoginImg} alt="Verify OTP" className="h-150 w-165" />
-        </div>
-
-        <div className="mt-10 flex-1 space-y-4 px-8">
-          <div className="space-y-2">
-            <h2 className="text-lg font-bold tracking-tight text-gray-800">
+    <main className="flex min-h-screen bg-gray-50">
+      <div className="relative hidden overflow-hidden lg:flex lg:w-1/2">
+        <img
+          src={LoginImg}
+          alt="EV Charging Station"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gray-900/40" />
+        <div className="absolute inset-0 flex flex-col justify-between p-10">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+              <Zap size={16} className="text-white" strokeWidth={2.5} />
+            </div>
+            <span className="text-sm font-bold tracking-tight text-white">
               Click&Charge
-            </h2>
-            <h1 className="text-2xl font-bold text-gray-900">Verify OTP</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Enter the 6-digit OTP sent to your registered email.
+            </span>
+          </div>
+          <div>
+            <p className="text-2xl font-bold leading-snug text-white">
+              One step away.
+              <br />
+              Verify your code and continue.
+            </p>
+            <p className="mt-2 text-sm text-white/70">
+              Secure access starts with a quick one-time password check.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex items-center gap-2 lg:hidden">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+              <Zap size={16} className="text-white" strokeWidth={2.5} />
+            </div>
+            <span className="text-sm font-bold tracking-tight text-gray-900">
+              Click&Charge
+            </span>
+          </div>
+
+          <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm">
+            <KeyRound size={20} className="text-emerald-600" />
+          </div>
+
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Verify OTP
+            </h1>
+            <p className="mt-1.5 text-sm text-gray-500">
+              Enter the 6-digit code sent to your registered email address.
             </p>
           </div>
 
-          {notice && <p className="text-sm text-green-600">{notice}</p>}
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {notice && (
+            <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700">
+              <span className="shrink-0">✓</span>
+              {notice}
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Field className="gap-2">
-              <FieldLabel className="text-base font-medium">Email</FieldLabel>
-              <Input
-                className="h-14 border border-[#B6B6B6]"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
-            </Field>
+          {error && (
+            <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+              <span className="shrink-0">⚠</span>
+              {error}
+            </div>
+          )}
 
-            <Field className="gap-2">
-              <FieldLabel className="text-base font-medium">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <input type="hidden" {...register("email")} />
+
+            <Field className="gap-1.5">
+              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
                 OTP code
               </FieldLabel>
-              <Input
-                className="h-14 border border-[#B6B6B6]"
-                inputMode="numeric"
-                maxLength={6}
-                {...register("otp")}
-              />
+              <div>
+                <Controller
+                  control={control}
+                  name="otp"
+                  render={({ field }) => (
+                    <InputOTP
+                      maxLength={6}
+                      value={field.value}
+                      onChange={field.onChange}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      containerClassName="justify-center"
+                    >
+                      <InputOTPGroup className="gap-2 justify-center">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                          <InputOTPSlot
+                            key={index}
+                            index={index}
+                            className="h-11 w-11 rounded-md border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-none transition-colors data-[active=true]:border-emerald-600 data-[active=true]:ring-1 data-[active=true]:ring-emerald-600/20"
+                          />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  )}
+                />
+              </div>
+              <div className="text-xs text-gray-400">
+                Use the 6-digit code from your inbox.
+              </div>
               {errors.otp && (
-                <p className="text-sm text-red-500">{errors.otp.message}</p>
+                <p className="text-xs text-red-500">{errors.otp.message}</p>
               )}
             </Field>
 
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-14 w-full bg-green-400"
+              className="h-10 w-full rounded-lg bg-emerald-600 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Verify OTP
+              {isSubmitting ? "Verifying OTP…" : "Verify OTP"}
             </Button>
           </form>
 
-          <div className="text-center text-[14px]">
+          <div className="mt-6 text-center">
             <Link
               to="/forgot-password"
-              className="cursor-pointer text-secondary_brand"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition hover:text-emerald-600"
             >
+              <ArrowLeft size={13} />
               Back
             </Link>
           </div>

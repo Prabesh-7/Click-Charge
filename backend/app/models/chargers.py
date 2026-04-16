@@ -110,7 +110,12 @@ class ConnectorSlot(Base):
 
 async def create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(
+                bind=sync_conn,
+                tables=[Charger.__table__, Connector.__table__, ConnectorSlot.__table__],
+            )
+        )
 
         # Keep schema in sync for existing databases without migrations.
         await conn.execute(text("ALTER TABLE connectors ADD COLUMN IF NOT EXISTS reserved_by_user_id INTEGER"))

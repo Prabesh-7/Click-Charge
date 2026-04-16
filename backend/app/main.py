@@ -51,6 +51,15 @@ app.include_router(wallet_routes.router)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
+async def _run_startup_step(label: str, step, required: bool = False):
+    try:
+        await step()
+    except Exception as exc:
+        if required:
+            raise
+        print(f"Skipping {label} during startup: {exc}")
+
+
 @app.get("/health-check")
 def read_root():
     return {"message": "Backend is running properly"}
@@ -58,12 +67,12 @@ def read_root():
 @app.on_event("startup")
 async def on_startup():
     await test_db_connection()
-    await create_user_tables()
-    await create_station_tables()
-    await create_charger_tables()
-    await create_reservation_tables()
-    await create_wallet_tables()
-    await create_charging_session_tables()
-    await create_station_review_tables()
+    await _run_startup_step("user tables", create_user_tables, required=True)
+    await _run_startup_step("station tables", create_station_tables)
+    await _run_startup_step("charger tables", create_charger_tables)
+    await _run_startup_step("reservation tables", create_reservation_tables)
+    await _run_startup_step("wallet tables", create_wallet_tables)
+    await _run_startup_step("charging session tables", create_charging_session_tables)
+    await _run_startup_step("station review tables", create_station_review_tables)
     
     

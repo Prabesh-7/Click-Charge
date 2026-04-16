@@ -64,5 +64,10 @@ class EsewaTopupRequest(Base):
 
 async def create_tables():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(
+            lambda sync_conn: Base.metadata.create_all(
+                bind=sync_conn,
+                tables=[Wallet.__table__, WalletTransaction.__table__, EsewaTopupRequest.__table__],
+            )
+        )
     print("Wallet Tables created!")
