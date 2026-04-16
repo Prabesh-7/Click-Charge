@@ -1,5 +1,5 @@
 from datetime import date
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -40,13 +40,34 @@ async def patch_user_profile(
 
 @router.get("/stations", response_model=list[UserStationOut])
 async def get_available_stations(
+    radius_km: str | None = Query(default=None),
+    user_latitude: float | None = Query(default=None, ge=-90, le=90),
+    user_longitude: float | None = Query(default=None, ge=-180, le=180),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get all available stations for authenticated users.
     """
-    return await get_available_stations_for_user(db, current_user.user_id)
+    parsed_radius_km: int | None = None
+    if radius_km is not None:
+        try:
+            parsed_radius = float(radius_km)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="radius_km must be 5 or 10")
+
+        if parsed_radius not in (5.0, 10.0):
+            raise HTTPException(status_code=422, detail="radius_km must be 5 or 10")
+
+        parsed_radius_km = int(parsed_radius)
+
+    return await get_available_stations_for_user(
+        db,
+        current_user.user_id,
+        radius_km=parsed_radius_km,
+        user_latitude=user_latitude,
+        user_longitude=user_longitude,
+    )
 
 
 @router.post("/chargers/{charger_id}/reserve", response_model=ChargerControlResponse)

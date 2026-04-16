@@ -97,10 +97,11 @@ from app.models.stations import Station
 from app.models.chargers import Charger, ChargerStatus
 from app.schemas.userValidation import UserCreate, UserOut
 from sqlalchemy.future import select
-from sqlalchemy import func
+from sqlalchemy import func, cast
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 from jose import JWTError
+from geoalchemy2 import Geography
 from app.schemas.userValidation import UserLogin, ForgotPasswordRequest, VerifyResetOtpRequest, ResetPasswordRequest
 from app.schemas.userValidation import UserProfileUpdate
 from app.utils.jwt import create_access_token, create_password_reset_session_token, decode_password_reset_session_token
@@ -348,27 +349,70 @@ async def reset_password(payload: ResetPasswordRequest, db: AsyncSession) -> dic
 async def get_available_stations_for_user(
     db: AsyncSession,
     current_user_id: int | None = None,
+    radius_km: int | None = None,
+    user_latitude: float | None = None,
+    user_longitude: float | None = None,
 ) -> list[UserStationOut]:
-    station_result = await db.execute(
-        select(
-            Station.station_id,
-            Station.station_name,
-            Station.address,
-            func.ST_X(Station.location).label("longitude"),
-            func.ST_Y(Station.location).label("latitude"),
-            Station.station_description,
-            Station.phone_number,
-            Station.has_wifi,
-            Station.has_parking,
-            Station.has_food,
-            Station.has_coffee,
-            Station.has_bedroom,
-            Station.has_restroom,
-            Station.station_images,
-            Station.created_at,
+    station_columns = [
+        Station.station_id,
+        Station.station_name,
+        Station.address,
+        func.ST_X(Station.location).label("longitude"),
+        func.ST_Y(Station.location).label("latitude"),
+        Station.station_description,
+        Station.phone_number,
+        Station.has_wifi,
+        Station.has_parking,
+        Station.has_food,
+        Station.has_coffee,
+        Station.has_bedroom,
+        Station.has_restroom,
+        Station.station_images,
+        Station.created_at,
+    ]
+
+    station_query = select(*station_columns)
+
+    has_any_location = user_latitude is not None or user_longitude is not None
+    has_full_location = user_latitude is not None and user_longitude is not None
+
+    if has_any_location and not has_full_location:
+        raise HTTPException(
+            status_code=422,
+            detail="Both user_latitude and user_longitude are required when providing location",
         )
-        .order_by(Station.created_at.desc())
-    )
+
+    if radius_km is not None and not has_full_location:
+        raise HTTPException(
+            status_code=422,
+            detail="user_latitude and user_longitude are required when radius_km is provided",
+        )
+
+    if has_full_location:
+        station_geography = cast(Station.location, Geography)
+        user_point_geography = cast(
+            func.ST_SetSRID(func.ST_MakePoint(user_longitude, user_latitude), 4326),
+            Geography,
+        )
+
+        station_query = station_query.add_columns(
+            func.ST_Distance(station_geography, user_point_geography).label("distance_meters")
+        )
+
+        if radius_km is not None:
+            radius_meters = radius_km * 1000
+            station_query = station_query.where(
+                func.ST_DWithin(station_geography, user_point_geography, radius_meters)
+            )
+
+        station_query = station_query.order_by(
+            func.ST_Distance(station_geography, user_point_geography).asc(),
+            Station.created_at.desc(),
+        )
+    else:
+        station_query = station_query.order_by(Station.created_at.desc())
+
+    station_result = await db.execute(station_query)
 
     stations = station_result.mappings().all()
     if not stations:
@@ -475,6 +519,11 @@ async def get_available_stations_for_user(
                 average_rating=aggregate_map.get(station_id, (0.0, 0))[0],
                 review_count=aggregate_map.get(station_id, (0.0, 0))[1],
                 my_rating=my_rating_map.get(station_id),
+                distance_km=(
+                    round(float(station["distance_meters"]) / 1000, 2)
+                    if "distance_meters" in station and station["distance_meters"] is not None
+                    else None
+                ),
                 charger_types=sorted(charger_types),
                 chargers=chargers_out,
                 created_at=station["created_at"],

@@ -44,6 +44,7 @@ class UserStationOut(BaseModel):
     average_rating: float = 0.0
     review_count: int = 0
     my_rating: Optional[int] = None
+    distance_km: Optional[float] = None
     charger_types: list[str] = Field(default_factory=list)
     chargers: list[UserStationChargerOut] = Field(default_factory=list)
     created_at: datetime

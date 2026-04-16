@@ -41,9 +41,16 @@ export interface UserStation {
   average_rating: number;
   review_count: number;
   my_rating?: number | null;
+  distance_km?: number | null;
   charger_types: string[];
   chargers: UserStationCharger[];
   created_at: string;
+}
+
+export interface GetUserStationsParams {
+  radius_km?: 5 | 10;
+  user_latitude?: number;
+  user_longitude?: number;
 }
 
 const authHeader = () => {
@@ -107,9 +114,22 @@ export const updateUserProfile = async (
   return data;
 };
 
-export const getUserStations = async () => {
+export const getUserStations = async (params?: GetUserStationsParams) => {
+  const queryParams: Record<string, number> = {};
+
+  if (params?.radius_km !== undefined) {
+    queryParams.radius_km = params.radius_km;
+  }
+  if (params?.user_latitude !== undefined) {
+    queryParams.user_latitude = params.user_latitude;
+  }
+  if (params?.user_longitude !== undefined) {
+    queryParams.user_longitude = params.user_longitude;
+  }
+
   const response = await api.get("/user/stations", {
     headers: authHeader(),
+    params: Object.keys(queryParams).length > 0 ? queryParams : undefined,
   });
 
   return response.data as UserStation[];
