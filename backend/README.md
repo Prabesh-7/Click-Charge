@@ -28,3 +28,15 @@ The auth endpoints are:
 
 - `POST /forgot-password`
 - `POST /reset-password`
+
+## Google sign-in
+
+Google sign-in is supported through ID token verification using `google-auth`.
+
+The backend uses this fixed Google OAuth client ID:
+
+- `484650375398-vrispacn1a9581b5sc9d2r4bqh7qvfjh.apps.googleusercontent.com`
+
+The Google auth endpoint is:
+
+- `POST /login/google`

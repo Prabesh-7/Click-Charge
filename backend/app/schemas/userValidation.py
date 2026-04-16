@@ -69,6 +69,10 @@ class VerifyResetOtpResponse(MessageResponse):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str    
+    password: str
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str = Field(..., min_length=20)
     
     

@@ -171,7 +171,6 @@
 //   );
 // }
 
-
 import { Field, FieldLabel } from "@/components/ui/field";
 import LoginImg from "../../../assets/LoginImg.jpg";
 import { Input } from "@/components/ui/input";
@@ -181,9 +180,10 @@ import { type LoginSchema, loginSchema } from "@/lib/schema/auth.schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Zap } from "lucide-react";
-import { GoogleIcon } from "@/assets/icon";
+import { GoogleLogin } from "@react-oauth/google";
+import type { CredentialResponse } from "@react-oauth/google";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "@/api/authApi";
+import { loginUser, loginWithGoogle } from "@/api/authApi";
 
 type UserRole = "ADMIN" | "MANAGER" | "STAFF" | "USER";
 
@@ -216,19 +216,44 @@ export default function Login() {
     defaultValues: { email: "", password: "" },
   });
 
+  const handleAuthSuccess = (res: {
+    access_token: string;
+    user?: { role?: unknown };
+  }) => {
+    localStorage.setItem("access_token", res.access_token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+    const role = normalizeUserRole(res.user?.role);
+    navigate(roleRedirectMap[role]);
+    alert("login successful!");
+  };
+
   const onSubmit = async (data: LoginSchema) => {
     try {
       const res = await loginUser(data);
       console.log("logged in successfully:", res);
       console.log("Form Data:", data);
-      localStorage.setItem("access_token", res.access_token);
-      localStorage.setItem("user", JSON.stringify(res.user));
-      const role = normalizeUserRole(res.user?.role);
-      navigate(roleRedirectMap[role]);
-      alert("login successful!");
+      handleAuthSuccess(res);
     } catch (error: any) {
       console.error("login failed:", error.response?.data || error.message);
       alert("login failed");
+    }
+  };
+
+  const onGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) {
+      alert("Google login failed");
+      return;
+    }
+
+    try {
+      const res = await loginWithGoogle(credentialResponse.credential);
+      handleAuthSuccess(res);
+    } catch (error: any) {
+      console.error(
+        "google login failed:",
+        error.response?.data || error.message,
+      );
+      alert("google login failed");
     }
   };
 
@@ -249,12 +274,16 @@ export default function Login() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-white">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-white">
+              Click&Charge
+            </span>
           </div>
           {/* Bottom tagline */}
           <div>
             <p className="text-2xl font-bold leading-snug text-white">
-              Power your journey,<br />charge with confidence.
+              Power your journey,
+              <br />
+              charge with confidence.
             </p>
             <p className="mt-2 text-sm text-white/70">
               Access thousands of EV charging stations across the network.
@@ -266,19 +295,24 @@ export default function Login() {
       {/* Right — form panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-sm">
-
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-gray-900">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-gray-900">
+              Click&Charge
+            </span>
           </div>
 
           {/* Heading */}
           <div className="mb-7">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Sign in</h1>
-            <p className="mt-1.5 text-sm text-gray-500">Welcome back! Enter your details to continue.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Sign in
+            </h1>
+            <p className="mt-1.5 text-sm text-gray-500">
+              Welcome back! Enter your details to continue.
+            </p>
           </div>
 
           {/* Form */}
@@ -326,7 +360,9 @@ export default function Login() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-500">{errors.password.message}</p>
+                <p className="text-xs text-red-500">
+                  {errors.password.message}
+                </p>
               )}
             </Field>
 
@@ -347,15 +383,25 @@ export default function Login() {
           </div>
 
           {/* Google */}
-          <Button className="h-10 w-full rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
-            <GoogleIcon />
-            Sign in with Google
-          </Button>
+          <div >
+            <GoogleLogin
+              onSuccess={onGoogleSuccess}
+              onError={() => alert("google login failed")}
+              text="signin_with"
+              shape="rectangular"
+              logo_alignment="center"
+              width="384"
+              size="large"
+            />
+          </div>
 
           {/* Register link */}
           <p className="mt-6 text-center text-xs text-gray-500">
             Don't have an account?{" "}
-            <Link to="/register" className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline underline-offset-2">
+            <Link
+              to="/register"
+              className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline underline-offset-2"
+            >
               Create an account
             </Link>
           </p>

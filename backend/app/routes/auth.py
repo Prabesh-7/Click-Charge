@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.userValidation import UserCreate, UserOut, UserLogin, Token, ForgotPasswordRequest, VerifyResetOtpRequest, ResetPasswordRequest, MessageResponse, VerifyResetOtpResponse
-from app.services.user_service import register_user, login_user, request_password_reset, verify_password_reset_otp, reset_password
+from app.schemas.userValidation import UserCreate, UserOut, UserLogin, Token, ForgotPasswordRequest, VerifyResetOtpRequest, ResetPasswordRequest, MessageResponse, VerifyResetOtpResponse, GoogleLoginRequest
+from app.services.user_service import register_user, login_user, login_user_with_google, request_password_reset, verify_password_reset_otp, reset_password
 from app.database import get_db
 
 router = APIRouter()
@@ -17,6 +17,14 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     return await login_user(user, db)
+
+
+@router.post("/login/google", response_model=Token)
+async def google_login(
+    payload: GoogleLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await login_user_with_google(payload.credential, db)
 
 
 @router.post("/forgot-password", response_model=MessageResponse)

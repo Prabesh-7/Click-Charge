@@ -86,7 +86,10 @@
 
 import os
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
+import httpx
+from google.oauth2 import id_token
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
@@ -109,10 +112,49 @@ from app.utils.security import hash_password, verify_password
 
 
 PASSWORD_RESET_OTP_EXPIRY_MINUTES = int(os.getenv("PASSWORD_RESET_OTP_EXPIRY_MINUTES", "10"))
+GOOGLE_CLIENT_ID = "484650375398-vrispacn1a9581b5sc9d2r4bqh7qvfjh.apps.googleusercontent.com"
 
 
 def _generate_password_reset_otp() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
+
+
+async def _verify_google_token_via_tokeninfo(credential: str) -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": credential},
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    token_info = response.json()
+
+    aud = str(token_info.get("aud") or "")
+    iss = str(token_info.get("iss") or "")
+    exp_raw = token_info.get("exp")
+    email = token_info.get("email")
+    email_verified = token_info.get("email_verified")
+
+    try:
+        exp = int(str(exp_raw))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid Google token") from exc
+
+    if aud != GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=401, detail="Invalid Google audience")
+
+    if iss not in {"accounts.google.com", "https://accounts.google.com"}:
+        raise HTTPException(status_code=401, detail="Invalid Google issuer")
+
+    if exp <= int(time.time()):
+        raise HTTPException(status_code=401, detail="Expired Google token")
+
+    if not email or str(email_verified).lower() != "true":
+        raise HTTPException(status_code=401, detail="Google account email is not verified")
+
+    return token_info
 
 
 async def login_user(user: UserLogin, db: AsyncSession):
@@ -146,6 +188,53 @@ async def login_user(user: UserLogin, db: AsyncSession):
         "access_token": access_token,
         "token_type": "bearer",
         "user": UserOut.model_validate(db_user)  # ← clean, single line
+    }
+
+
+async def login_user_with_google(credential: str, db: AsyncSession):
+    try:
+        from google.auth.transport import requests as google_requests
+
+        id_info = id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
+        )
+    except ImportError:
+        id_info = await _verify_google_token_via_tokeninfo(credential)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Invalid Google token") from exc
+
+    email = id_info.get("email")
+    email_verified = id_info.get("email_verified")
+    if not email or not email_verified:
+        raise HTTPException(status_code=401, detail="Google account email is not verified")
+
+    result = await db.execute(select(User).where(User.email == email))
+    db_user = result.scalar_one_or_none()
+
+    if not db_user:
+        display_name = str(id_info.get("name") or email.split("@")[0]).strip()[:100]
+        db_user = User(
+            user_name=display_name or "Google User",
+            email=email,
+            password=hash_password(secrets.token_urlsafe(32)),
+        )
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+
+    token_data = TokenData(
+        user_id=db_user.user_id,
+        email=db_user.email,
+        role=db_user.role,
+    )
+    access_token = create_access_token(token_data)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserOut.model_validate(db_user),
     }
 
 

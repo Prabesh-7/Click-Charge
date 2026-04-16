@@ -7,6 +7,23 @@ import {
   type ResetPasswordRequestPayload,
 } from "@/lib/schema/auth.schema";
 
+type AuthUser = {
+  user_id: number;
+  user_name: string;
+  email: string;
+  role: string;
+  phone_number?: string | null;
+  vehicle?: string | null;
+  station_id?: number | null;
+  created_at: string;
+};
+
+type AuthTokenResponse = {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+};
+
 export const registerUser = async (data: RegisterSchema) => {
   const response = await api.post("/register", data);
 
@@ -18,7 +35,13 @@ export const registerUser = async (data: RegisterSchema) => {
 
 export const loginUser = async (data: LoginSchema) => {
   const response = await api.post("/login", data);
-  return response.data;
+  return response.data as AuthTokenResponse;
+};
+
+
+export const loginWithGoogle = async (credential: string) => {
+  const response = await api.post("/login/google", { credential });
+  return response.data as AuthTokenResponse;
 };
 
 
