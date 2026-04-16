@@ -217,9 +217,7 @@ export default function ManageSlots() {
               View Created Slots
             </button>
           </div>
-          <p className="mt-2 text-xs text-gray-500">
-            {todayLabel()}
-          </p>
+          <p className="mt-2 text-xs text-gray-500">{todayLabel()}</p>
         </section>
 
         {error && (
@@ -244,7 +242,7 @@ export default function ManageSlots() {
                 Select a connector and create a slot right from the charger.
               </p>
             </div>
-            <div className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+            <div className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">
               Selected: {selectedConnectorLabel}
             </div>
           </div>
@@ -285,7 +283,7 @@ export default function ManageSlots() {
                           key={connector.connector_id}
                           className={`rounded-lg border p-3 transition ${
                             isSelected
-                              ? "border-blue-300 bg-blue-50"
+                              ? "border-gray-300 bg-gray-100"
                               : "border-gray-200 bg-white"
                           }`}
                         >
@@ -298,7 +296,7 @@ export default function ManageSlots() {
                                 onChange={() =>
                                   setSelectedConnectorId(connector.connector_id)
                                 }
-                                className="mt-1 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="mt-1 h-4 w-4 border-gray-300"
                               />
                               <div>
                                 <p className="text-sm font-semibold text-gray-900">
@@ -326,7 +324,7 @@ export default function ManageSlots() {
                         </label>
                         <input
                           type="time"
-                          className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm"
+                          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-black"
                           value={startTime}
                           onChange={(e) => setStartTime(e.target.value)}
                         />
@@ -338,7 +336,7 @@ export default function ManageSlots() {
                         </label>
                         <input
                           type="time"
-                          className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm"
+                          className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-black"
                           value={endTime}
                           onChange={(e) => setEndTime(e.target.value)}
                         />
@@ -363,7 +361,7 @@ export default function ManageSlots() {
 
                     <button
                       type="button"
-                      className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                      className="mt-4 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                       disabled={actionLoading || selectedConnectorId === null}
                       onClick={() => void handleCreateSelectedSlot()}
                     >

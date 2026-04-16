@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getManagerSlots,
   releaseManagerSlotReservation,
+  sendManagerSlotCancelConfirmation,
   sendManagerSlotConfirmation,
   type Slot,
 } from "@/api/managerApi";
+import { toast } from "sonner";
 
 const getTodayDateParam = () => {
   const now = new Date();
@@ -74,8 +76,10 @@ export default function Reservations() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const getActionKey = (slotId: number, action: "release" | "confirm") =>
-    `${slotId}:${action}`;
+  const getActionKey = (
+    slotId: number,
+    action: "release" | "confirm" | "cancel-confirm",
+  ) => `${slotId}:${action}`;
 
   const reservedSlots = useMemo(
     () =>
@@ -180,6 +184,37 @@ export default function Reservations() {
       setError(
         err.response?.data?.detail || "Failed to send confirmation email.",
       );
+    } finally {
+      setActionLoadingKey(null);
+    }
+  };
+
+  const handleSendCancelConfirmation = async (slotId: number) => {
+    try {
+      setActionLoadingKey(getActionKey(slotId, "cancel-confirm"));
+      setError(null);
+      setSuccess(null);
+
+      const response = await sendManagerSlotCancelConfirmation(slotId);
+      const emailStatus = response?.email_status;
+
+      if (typeof emailStatus === "string" && emailStatus.trim()) {
+        toast.warning("Reservation cancelled and refunded.", {
+          description: emailStatus,
+        });
+      } else {
+        toast.success("Reservation cancelled and refunded.", {
+          description: "Cancellation email sent to user.",
+        });
+      }
+
+      await fetchSlots();
+    } catch (err: any) {
+      toast.error("Cancellation failed.", {
+        description:
+          err.response?.data?.detail ||
+          "Failed to cancel reservation and send cancellation email.",
+      });
     } finally {
       setActionLoadingKey(null);
     }
@@ -356,6 +391,19 @@ export default function Reservations() {
                               getActionKey(slot.slot_id, "confirm")
                                 ? "Sending..."
                                 : "Send confirmation"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleSendCancelConfirmation(slot.slot_id)
+                              }
+                              disabled={actionLoadingKey !== null}
+                              className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+                            >
+                              {actionLoadingKey ===
+                              getActionKey(slot.slot_id, "cancel-confirm")
+                                ? "Cancelling..."
+                                : "Send cancel confirmation"}
                             </button>
                             <button
                               type="button"

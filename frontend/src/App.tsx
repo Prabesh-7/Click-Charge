@@ -1,19 +1,12 @@
-
-
-import Login from './features/auth/pages/Login'
-import Register from './features/auth/pages/Register'
-import AppRoutes from './routes/AppRoutes'
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
+import AppRoutes from "./routes/AppRoutes";
 
 export default function App() {
   return (
-    <>
-
-    <AppRoutes/>
-      {/* <Login/> */}
-      {/* <Register/> */}
-
-
-      
-    </>
-  )
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AppRoutes />
+      <Toaster position="top-center" />
+    </ThemeProvider>
+  );
 }

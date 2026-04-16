@@ -13,7 +13,12 @@ from app.services.reservation_service import (
     create_slot_reservation_record,
 )
 from app.services.notification_service import EmailDeliveryError, send_email
-from app.services.wallet_service import debit_wallet_for_slot_reservation, SLOT_RESERVATION_FEE
+from app.services.wallet_service import (
+    debit_wallet_for_slot_reservation,
+    refund_wallet_for_slot_reservation,
+    refund_wallet_for_slot_reservation_by_user_id,
+    SLOT_RESERVATION_FEE,
+)
 
 
 MIN_SLOT_DURATION_MINUTES = 20
@@ -346,6 +351,40 @@ async def release_slot_reservation_by_manager(
     if slot.status != SlotStatus.RESERVED:
         raise HTTPException(status_code=400, detail="Slot is not reserved")
 
+    reserved_user_id = slot.reserved_by_user_id
+    recipient_email = slot.reserved_by_email
+    recipient_name = slot.reserved_by_user_name or "Customer"
+    slot_start_time = slot.start_time
+    slot_end_time = slot.end_time
+
+    slot_meta_result = await db.execute(
+        select(
+            Connector.connector_number,
+            Charger.name.label("charger_name"),
+            Station.station_name,
+            Station.address,
+        )
+        .join(Charger, Charger.charger_id == Connector.charger_id)
+        .join(Station, Station.station_id == Charger.station_id)
+        .where(Connector.connector_id == slot.connector_id)
+    )
+    slot_meta = slot_meta_result.mappings().first()
+
+    balance_after_refund = None
+    if reserved_user_id:
+        balance_after_refund = await refund_wallet_for_slot_reservation_by_user_id(
+            db=db,
+            user_id=reserved_user_id,
+            slot_id=slot.slot_id,
+        )
+
+        if not recipient_email:
+            user_result = await db.execute(select(User).where(User.user_id == reserved_user_id))
+            reserved_user = user_result.scalar_one_or_none()
+            if reserved_user:
+                recipient_email = reserved_user.email
+                recipient_name = recipient_name or reserved_user.user_name or "Customer"
+
     slot.status = SlotStatus.OPEN
     slot.reserved_by_user_id = None
     slot.reserved_by_user_name = None
@@ -357,7 +396,38 @@ async def release_slot_reservation_by_manager(
 
     await db.commit()
 
-    return {"message": "Slot reservation released successfully"}
+    if recipient_email and balance_after_refund is not None:
+        subject = "Click&Charge slot reservation cancelled by station"
+        body = (
+            f"Hello {recipient_name},\n\n"
+            f"Your slot reservation has been cancelled by the station manager.\n\n"
+            f"Refund amount: NPR {float(SLOT_RESERVATION_FEE):.2f}\n"
+            f"Updated wallet balance: NPR {float(balance_after_refund):.2f}\n"
+            f"Station: {(slot_meta or {}).get('station_name', 'N/A')}\n"
+            f"Address: {(slot_meta or {}).get('address', 'N/A')}\n"
+            f"Charger: {(slot_meta or {}).get('charger_name', 'N/A')}\n"
+            f"Connector: {(slot_meta or {}).get('connector_number', 'N/A')}\n"
+            f"Time: {_format_confirmation_datetime(slot_start_time)} - {_format_confirmation_datetime(slot_end_time)}\n\n"
+            f"The refund has been credited to your Click&Charge wallet.\n\n"
+            f"Thank you,\n"
+            f"Click&Charge"
+        )
+
+        try:
+            await send_email(subject=subject, recipient_email=str(recipient_email), body_text=body)
+        except EmailDeliveryError:
+            return {
+                "message": "Slot reservation released successfully",
+                "refunded_amount": float(SLOT_RESERVATION_FEE),
+                "wallet_balance": float(balance_after_refund),
+                "email_status": "Cancellation email could not be sent",
+            }
+
+    response = {"message": "Slot reservation released successfully"}
+    if balance_after_refund is not None:
+        response["refunded_amount"] = float(SLOT_RESERVATION_FEE)
+        response["wallet_balance"] = float(balance_after_refund)
+    return response
 
 
 async def _get_manager_reserved_slot_details(
@@ -435,6 +505,14 @@ async def send_slot_confirmation_email_by_manager(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return {"message": "Reservation confirmation email sent successfully"}
+
+
+async def send_slot_cancellation_confirmation_by_manager(
+    slot_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    return await release_slot_reservation_by_manager(slot_id, current_manager, db)
 
 
 async def _get_staff_slot(
@@ -589,6 +667,30 @@ async def cancel_slot_reservation_by_user(
     if slot.reserved_by_user_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="You can only cancel your own reservation")
 
+    slot_meta_result = await db.execute(
+        select(
+            Connector.connector_number,
+            Charger.name.label("charger_name"),
+            Station.station_name,
+            Station.address,
+        )
+        .join(Charger, Charger.charger_id == Connector.charger_id)
+        .join(Station, Station.station_id == Charger.station_id)
+        .where(Connector.connector_id == slot.connector_id)
+    )
+    slot_meta = slot_meta_result.mappings().first()
+
+    recipient_email = slot.reserved_by_email or current_user.email
+    recipient_name = slot.reserved_by_user_name or current_user.user_name or "Customer"
+    slot_start_time = slot.start_time
+    slot_end_time = slot.end_time
+
+    balance_after_refund = await refund_wallet_for_slot_reservation(
+        current_user=current_user,
+        db=db,
+        slot_id=slot.slot_id,
+    )
+
     slot.status = SlotStatus.OPEN
     slot.reserved_by_user_id = None
     slot.reserved_by_user_name = None
@@ -600,4 +702,35 @@ async def cancel_slot_reservation_by_user(
 
     await db.commit()
 
-    return {"message": "Slot reservation cancelled successfully"}
+    if recipient_email:
+        subject = "Click&Charge slot reservation cancelled"
+        body = (
+            f"Hello {recipient_name},\n\n"
+            f"Your slot reservation has been cancelled successfully.\n\n"
+            f"Refund amount: NPR {float(SLOT_RESERVATION_FEE):.2f}\n"
+            f"Updated wallet balance: NPR {float(balance_after_refund):.2f}\n"
+            f"Station: {(slot_meta or {}).get('station_name', 'N/A')}\n"
+            f"Address: {(slot_meta or {}).get('address', 'N/A')}\n"
+            f"Charger: {(slot_meta or {}).get('charger_name', 'N/A')}\n"
+            f"Connector: {(slot_meta or {}).get('connector_number', 'N/A')}\n"
+            f"Time: {_format_confirmation_datetime(slot_start_time)} - {_format_confirmation_datetime(slot_end_time)}\n\n"
+            f"The refund has been credited to your Click&Charge wallet.\n\n"
+            f"Thank you,\n"
+            f"Click&Charge"
+        )
+
+        try:
+            await send_email(subject=subject, recipient_email=str(recipient_email), body_text=body)
+        except EmailDeliveryError:
+            return {
+                "message": "Slot reservation cancelled successfully",
+                "refunded_amount": float(SLOT_RESERVATION_FEE),
+                "wallet_balance": float(balance_after_refund),
+                "email_status": "Cancellation email could not be sent",
+            }
+
+    return {
+        "message": "Slot reservation cancelled successfully",
+        "refunded_amount": float(SLOT_RESERVATION_FEE),
+        "wallet_balance": float(balance_after_refund),
+    }

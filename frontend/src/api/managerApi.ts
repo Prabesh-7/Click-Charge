@@ -410,6 +410,13 @@ export const sendManagerSlotConfirmation = async (slotId: number) => {
   return response.data;
 };
 
+export const sendManagerSlotCancelConfirmation = async (slotId: number) => {
+  const response = await api.post(`/manager/slots/${slotId}/send-cancel-confirmation`, {}, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
 export const updateCharger = async (chargerId: number, data: CreateChargerSchema) => {
   const response = await api.put(
     `/manager/chargers/${chargerId}`,

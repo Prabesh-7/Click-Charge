@@ -44,6 +44,7 @@ from app.services.slot_service import (
     delete_slot_by_manager,
     release_slot_reservation_by_manager,
     send_slot_confirmation_email_by_manager,
+    send_slot_cancellation_confirmation_by_manager,
 )
 from app.services.wallet_service import get_wallet_by_user
 from app.utils.dependencies import require_manager
@@ -256,6 +257,15 @@ async def send_slot_confirmation_email(
     db: AsyncSession = Depends(get_db),
 ):
     return await send_slot_confirmation_email_by_manager(slot_id, current_manager, db)
+
+
+@router.post("/slots/{slot_id}/send-cancel-confirmation")
+async def send_slot_cancel_confirmation_email(
+    slot_id: int,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await send_slot_cancellation_confirmation_by_manager(slot_id, current_manager, db)
 
 
 @router.put("/chargers/{charger_id}", response_model=ChargerOut)

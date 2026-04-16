@@ -381,3 +381,45 @@ async def debit_wallet_for_slot_reservation(
         )
 
     return user_balance
+
+
+async def refund_wallet_for_slot_reservation(
+    current_user: User,
+    db: AsyncSession,
+    slot_id: int,
+) -> Decimal:
+    if SLOT_RESERVATION_FEE <= Decimal("0"):
+        wallet = await _get_or_create_wallet(db, current_user.user_id)
+        return _to_money(wallet.balance)
+
+    refunded_balance = await _credit_wallet_by_user_id(
+        db=db,
+        user_id=current_user.user_id,
+        amount=SLOT_RESERVATION_FEE,
+        source=WalletTransactionSource.SLOT_RESERVATION,
+        description=f"Slot reservation refund for slot {slot_id}",
+        reference=f"slot-{slot_id}-refund",
+    )
+
+    return refunded_balance
+
+
+async def refund_wallet_for_slot_reservation_by_user_id(
+    db: AsyncSession,
+    user_id: int,
+    slot_id: int,
+) -> Decimal:
+    if SLOT_RESERVATION_FEE <= Decimal("0"):
+        wallet = await _get_or_create_wallet(db, user_id)
+        return _to_money(wallet.balance)
+
+    refunded_balance = await _credit_wallet_by_user_id(
+        db=db,
+        user_id=user_id,
+        amount=SLOT_RESERVATION_FEE,
+        source=WalletTransactionSource.SLOT_RESERVATION,
+        description=f"Slot reservation refund for slot {slot_id}",
+        reference=f"slot-{slot_id}-refund",
+    )
+
+    return refunded_balance
