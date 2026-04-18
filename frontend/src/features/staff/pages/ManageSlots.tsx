@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyChargers, createManagerSlot } from "@/api/managerApi";
+import { createStaffSlot, getMyChargersByStaff } from "@/api/staffApi";
 import { toast } from "sonner";
 
 interface ChargerCard {
@@ -38,7 +38,7 @@ const toUtcIsoFromTodayTime = (value: string) =>
 
 const formatStatus = (status: string) => status.replace(/_/g, " ");
 
-export default function ManageSlots() {
+export default function StaffManageSlots() {
   const navigate = useNavigate();
   const [chargerCards, setChargerCards] = useState<ChargerCard[]>([]);
   const [selectedConnectorId, setSelectedConnectorId] = useState<number | null>(
@@ -52,7 +52,7 @@ export default function ManageSlots() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const fetchChargers = async () => {
-    const chargers = await getMyChargers();
+    const chargers = await getMyChargersByStaff();
     const normalizedChargers: ChargerCard[] = chargers.map((charger: any) => ({
       charger_id: charger.charger_id,
       name: charger.name,
@@ -173,7 +173,7 @@ export default function ManageSlots() {
       setActionLoading(true);
       setError(null);
       setSuccess(null);
-      await createManagerSlot({
+      await createStaffSlot({
         connector_id: connectorId,
         start_time: toUtcIsoFromTodayTime(startTime),
         end_time: toUtcIsoFromTodayTime(endTime),
@@ -218,17 +218,14 @@ export default function ManageSlots() {
         <section className="rounded-md border border-gray-200 bg-white p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Manage Time Slots
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900">Manage Slots</h1>
               <p className="mt-1 text-sm text-gray-600">
                 Create booking windows directly from each charger card.
               </p>
             </div>
-
             <button
               type="button"
-              onClick={() => navigate("/manager/slotList")}
+              onClick={() => navigate("/staff/slotList")}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               View Created Slots
@@ -249,30 +246,34 @@ export default function ManageSlots() {
           </div>
         )}
 
-        <section className="rounded-md border border-gray-200 bg-white p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Charger Cards
-              </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Select a connector and create a slot right from the charger.
-              </p>
-            </div>
-            <div className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">
-              Selected: {selectedConnectorLabel}
-            </div>
+        {loading && (
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
+            Loading chargers...
           </div>
+        )}
 
-          {loading && (
-            <p className="mt-4 text-sm text-gray-500">Loading chargers...</p>
-          )}
+        {!loading && chargerCards.length === 0 && (
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
+            No chargers available.
+          </div>
+        )}
 
-          {!loading && chargerCards.length === 0 && (
-            <p className="mt-4 text-sm text-gray-500">No chargers available.</p>
-          )}
+        {!loading && chargerCards.length > 0 && (
+          <section className="rounded-md border border-gray-200 bg-white p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Charger Cards
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Select a connector and create a slot right from the charger.
+                </p>
+              </div>
+              <div className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">
+                Selected: {selectedConnectorLabel}
+              </div>
+            </div>
 
-          {!loading && chargerCards.length > 0 && (
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               {chargerCards.map((charger) => (
                 <article
@@ -388,8 +389,8 @@ export default function ManageSlots() {
                 </article>
               ))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </main>
   );

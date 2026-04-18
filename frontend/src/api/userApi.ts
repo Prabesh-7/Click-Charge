@@ -100,6 +100,8 @@ export interface UserReservationItem {
   reserved_by_user_name: string | null;
   reserved_by_email: string | null;
   reserved_by_phone_number: string | null;
+  pending_payment_amount?: number | null;
+  pending_payment_count?: number | null;
 }
 
 export interface UserProfile {
@@ -222,4 +224,21 @@ export const getUserReservations = async (): Promise<UserReservationItem[]> => {
   });
 
   return data;
+};
+
+export const payPendingReservationAmount = async (reservationId: number) => {
+  const { data } = await api.post(
+    `/user/reservations/${reservationId}/pay-pending`,
+    {},
+    {
+      headers: authHeader(),
+    },
+  );
+
+  return data as {
+    message: string;
+    reservation_id: number;
+    paid_amount: number;
+    remaining_balance: number;
+  };
 };

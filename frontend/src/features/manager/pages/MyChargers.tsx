@@ -227,9 +227,9 @@ export default function MyChargers() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "AVAILABLE":
-        return "bg-[#22C55E]/10 text-[#22C55E] border border-[#22C55E]/20";
+        return "bg-green-50 text-green-600 border border-green-200";
       case "IN_CHARGING":
-        return "bg-orange-100 text-orange-700 border border-orange-200";
+        return "bg-amber-100 text-amber-700 border border-amber-200";
       case "RESERVED":
         return "bg-red-100 text-red-700 border border-red-200";
       default:
@@ -240,7 +240,7 @@ export default function MyChargers() {
   const formatStatus = (status: string) => status.replace("_", " ");
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
+    <main className="min-h-screen bg-white p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -250,7 +250,7 @@ export default function MyChargers() {
                 Charger Network
               </span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-3xl font-semibold text-gray-900">
               My Chargers
             </h1>
             <p className="mt-1.5 text-sm text-gray-500">
@@ -260,7 +260,7 @@ export default function MyChargers() {
           {chargers.length > 0 && (
             <button
               onClick={handleAddClick}
-              className="shrink-0 h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              className="shrink-0 rounded-md bg-green-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-green-700 flex items-center gap-2"
             >
               <Plus size={20} />
               Add Charger
@@ -274,7 +274,7 @@ export default function MyChargers() {
           {[1, 2, 3, 4].map((item) => (
             <div
               key={item}
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-md border border-gray-200 bg-white"
             >
               <div className="h-24 animate-pulse bg-gray-100" />
               <div className="space-y-3 p-4">
@@ -288,7 +288,7 @@ export default function MyChargers() {
       )}
 
       {error && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+        <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-red-700">
           <p>{error}</p>
         </div>
       )}
@@ -296,7 +296,7 @@ export default function MyChargers() {
       {!loading && !error && (
         <>
           {chargers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
+            <div className="flex flex-col items-center justify-center rounded-md border border-gray-200 bg-white px-6 py-16 text-center">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
                 <Zap size={22} />
               </div>
@@ -305,21 +305,21 @@ export default function MyChargers() {
               </p>
               <button
                 onClick={handleAddClick}
-                className="mt-6 h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+                className="mt-6 rounded-md bg-green-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-green-700 flex items-center gap-2"
               >
                 <Plus size={20} />
                 Add a charger of your station
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-2">
               {chargers.map((charger) => (
                 <div
                   key={charger.charger_id}
-                  className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-lg"
+                  className="overflow-hidden rounded-md border border-gray-200 bg-white transition-colors duration-200"
                 >
                   <div className="border-b border-gray-100 p-4">
-                    <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="mb-3 flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate text-base font-bold text-gray-900">
                           {charger.name}
@@ -378,10 +378,10 @@ export default function MyChargers() {
                     {(charger.connectors || []).map((connector) => (
                       <div
                         key={connector.connector_id}
-                        className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2.5"
+                        className="flex items-center justify-between gap-4 rounded-md bg-gray-50 px-3 py-2.5"
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#22C55E] shadow-sm">
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white text-green-600">
                             <Plug size={15} />
                           </span>
                           <div className="min-w-0">
@@ -427,7 +427,7 @@ export default function MyChargers() {
 
       {showEditModal && editingCharger && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-md border border-gray-200 bg-white p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">
               Edit Charger
             </h2>
@@ -438,7 +438,7 @@ export default function MyChargers() {
                   Charger Name
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. Charger A1"
                   {...register("name")}
                 />
@@ -455,7 +455,7 @@ export default function MyChargers() {
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500 cursor-not-allowed"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-500 cursor-not-allowed"
                   placeholder="e.g. 2"
                   min={1}
                   max={20}
@@ -477,7 +477,7 @@ export default function MyChargers() {
                   Charger Type
                 </FieldLabel>
                 <select
-                  className="h-10 border border-gray-300 rounded-lg px-3 text-sm w-full focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900"
+                  className="h-10 border border-gray-300 rounded-md px-3 text-sm w-full focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900"
                   {...register("type")}
                 >
                   <option value="">Select type</option>
@@ -500,7 +500,7 @@ export default function MyChargers() {
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 50"
                   min={1}
                   {...register("max_power_kw", {
@@ -523,7 +523,7 @@ export default function MyChargers() {
                   type="number"
                   step="0.01"
                   min={0}
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 12"
                   {...register("price_per_kwh", {
                     setValueAs: (value) =>
@@ -543,7 +543,7 @@ export default function MyChargers() {
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="Leave empty if none"
                   {...register("current_transaction_id", {
                     setValueAs: (value) =>
@@ -557,18 +557,18 @@ export default function MyChargers() {
                 )}
               </Field>
 
-              <div className="flex gap-3 mt-6">
+              <div className="mt-6 flex gap-4">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 h-10 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="flex-1 h-10 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-10 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 h-10 rounded-md bg-green-600 text-white hover:bg-green-700 font-medium transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving..." : "Save Changes"}
                 </button>
@@ -580,7 +580,7 @@ export default function MyChargers() {
 
       {showAddModal && (
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md rounded-md border border-gray-200">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
                 Add Charger
@@ -593,7 +593,7 @@ export default function MyChargers() {
                   Charger Name
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. Charger A1"
                   {...registerAdd("name")}
                 />
@@ -610,7 +610,7 @@ export default function MyChargers() {
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 2"
                   min={1}
                   max={20}
@@ -631,7 +631,7 @@ export default function MyChargers() {
                   Charger Type
                 </FieldLabel>
                 <select
-                  className="h-10 border border-gray-300 rounded-lg px-3 text-sm w-full focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900"
+                  className="h-10 border border-gray-300 rounded-md px-3 text-sm w-full focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900"
                   {...registerAdd("type")}
                 >
                   <option value="">Select type</option>
@@ -654,7 +654,7 @@ export default function MyChargers() {
                 </FieldLabel>
                 <Input
                   type="number"
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 50"
                   min={1}
                   {...registerAdd("max_power_kw", {
@@ -669,7 +669,7 @@ export default function MyChargers() {
                 )}
               </Field>
 
-              <DialogFooter className="gap-3 sm:flex-row">
+              <DialogFooter className="gap-4 sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
@@ -681,7 +681,7 @@ export default function MyChargers() {
                 <Button
                   type="submit"
                   disabled={isAddSubmitting}
-                  className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="h-10 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isAddSubmitting ? "Adding..." : "Add Charger"}
                 </Button>

@@ -78,18 +78,22 @@ export interface ManagerStaff {
 }
 
 export interface ReservationItem {
+  reservation_id?: number | null;
+  reservation_type?: "SLOT" | "CONNECTOR" | null;
   charger_id: number;
   charger_name: string;
   charger_type: string;
   connector_id: number;
   connector_number: number;
   charge_point_id: string;
-  status: "RESERVED";
+  status: "RESERVED" | "ACTIVE" | "CANCELLED" | "RELEASED" | "EXPIRED" | "COMPLETED";
   reserved_at?: string | null;
   reserved_by_user_id?: number | null;
   reserved_by_user_name?: string | null;
   reserved_by_email?: string | null;
   reserved_by_phone_number?: string | null;
+  pending_payment_amount?: number | null;
+  pending_payment_count?: number | null;
 }
 
 export interface Slot {
@@ -141,6 +145,16 @@ export interface ChargingSessionItem {
   invoice_total_energy_kwh: number | null;
   invoice_price_per_kwh: number | null;
   invoice_total_amount: number | null;
+  payment_saved: boolean;
+  payment_saved_at: string | null;
+  revenue_amount: number | null;
+}
+
+export interface ChargingRevenueSummary {
+  total_sessions: number;
+  paid_sessions: number;
+  unpaid_sessions: number;
+  total_revenue: number;
 }
 
 export interface ManagerStationReview {
@@ -359,12 +373,73 @@ export const getManagerReservations = async () => {
   return response.data as ReservationItem[];
 };
 
+export const getManagerReservationRecords = async () => {
+  const response = await api.get(
+    "/manager/reservation-records",
+    {
+      headers: authHeader(),
+    }
+  );
+
+  return response.data as ReservationItem[];
+};
+
+export const requestManagerReservationPayment = async (
+  reservationId: number,
+  amount: number,
+  note?: string,
+) => {
+  const response = await api.post(
+    `/manager/reservations/${reservationId}/request-payment`,
+    {
+      amount,
+      note,
+    },
+    {
+      headers: authHeader(),
+    },
+  );
+
+  return response.data as {
+    message: string;
+    payment_request_id: number;
+    reservation_id: number;
+    amount: number;
+    status: string;
+  };
+};
+
 export const getManagerChargingSessions = async (): Promise<ChargingSessionItem[]> => {
   const response = await api.get("/manager/charging-sessions", {
     headers: authHeader(),
   });
 
   return response.data as ChargingSessionItem[];
+};
+
+export const saveManagerChargingSessionPayment = async (sessionId: number) => {
+  const response = await api.post(
+    `/manager/charging-sessions/${sessionId}/save-payment`,
+    {},
+    {
+      headers: authHeader(),
+    },
+  );
+
+  return response.data as {
+    message: string;
+    session_id: number;
+    payment_saved: boolean;
+    revenue_amount: number;
+  };
+};
+
+export const getManagerChargingRevenueSummary = async (): Promise<ChargingRevenueSummary> => {
+  const response = await api.get("/manager/charging-sessions/revenue-summary", {
+    headers: authHeader(),
+  });
+
+  return response.data as ChargingRevenueSummary;
 };
 
 export const getManagerSlots = async (slotDate?: string): Promise<Slot[]> => {

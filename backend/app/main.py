@@ -7,6 +7,7 @@ from app.models.reservation import create_tables as create_reservation_tables
 from app.models.wallet import create_tables as create_wallet_tables
 from app.models.charging_session import create_tables as create_charging_session_tables
 from app.models.station_review import create_tables as create_station_review_tables
+from app.models.reservation_payment import create_tables as create_reservation_payment_tables
 
 from app.routes import auth
 from app.routes import admin_routes
@@ -74,5 +75,6 @@ async def on_startup():
     await _run_startup_step("wallet tables", create_wallet_tables)
     await _run_startup_step("charging session tables", create_charging_session_tables)
     await _run_startup_step("station review tables", create_station_review_tables)
+    await _run_startup_step("reservation payment tables", create_reservation_payment_tables)
     
     

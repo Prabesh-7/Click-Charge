@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerCreate, ChargerOut, ChargerControlResponse, ChargerMeterValues, ChargerPricingUpdate
-from app.schemas.charging_session import ChargingSessionOut
+from app.schemas.charging_session import ChargingSessionOut, ChargingRevenueSummaryOut
 from app.schemas.reservation import ReservationOut
 from app.schemas.slot import SlotCreate, SlotOut, SlotUpdate
 from app.schemas.manager_station import StationOut, ManagerStationUpdate
@@ -25,6 +25,8 @@ from app.services.charger_service import (
     delete_charger_by_manager,
     update_charger_pricing_by_manager,
     get_charging_sessions_by_manager,
+    save_charging_session_payment_by_manager,
+    get_charging_revenue_summary_by_manager,
 )
 from app.services.manager_service import (
     create_staff_for_manager,
@@ -46,11 +48,21 @@ from app.services.slot_service import (
     send_slot_confirmation_email_by_manager,
     send_slot_cancellation_confirmation_by_manager,
 )
+from app.services.reservation_service import (
+    create_reservation_payment_request_by_manager,
+    get_reservation_records_by_manager,
+)
 from app.services.wallet_service import get_wallet_by_user
 from app.utils.dependencies import require_manager
 from typing import List
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/manager", tags=["Manager"])
+
+
+class ReservationPaymentRequestIn(BaseModel):
+    amount: float
+    note: str | None = None
 
 
 @router.post("/add-charger", response_model=ChargerOut)
@@ -196,12 +208,37 @@ async def get_my_reservations(
     return await get_reservations_by_manager(current_manager, db)
 
 
+@router.get("/reservation-records", response_model=List[ReservationOut])
+async def get_manager_reservation_records(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_reservation_records_by_manager(current_manager, db)
+
+
 @router.get("/charging-sessions", response_model=List[ChargingSessionOut])
 async def get_my_charging_sessions(
     current_manager: User = Depends(require_manager),
     db: AsyncSession = Depends(get_db),
 ):
     return await get_charging_sessions_by_manager(current_manager, db)
+
+
+@router.post("/charging-sessions/{session_id}/save-payment")
+async def save_charging_session_payment(
+    session_id: int,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await save_charging_session_payment_by_manager(session_id, current_manager, db)
+
+
+@router.get("/charging-sessions/revenue-summary", response_model=ChargingRevenueSummaryOut)
+async def get_charging_revenue_summary(
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_charging_revenue_summary_by_manager(current_manager, db)
 
 
 @router.get("/slots", response_model=List[SlotOut])
@@ -266,6 +303,22 @@ async def send_slot_cancel_confirmation_email(
     db: AsyncSession = Depends(get_db),
 ):
     return await send_slot_cancellation_confirmation_by_manager(slot_id, current_manager, db)
+
+
+@router.post("/reservations/{reservation_id}/request-payment")
+async def request_reservation_payment(
+    reservation_id: int,
+    payload: ReservationPaymentRequestIn,
+    current_manager: User = Depends(require_manager),
+    db: AsyncSession = Depends(get_db),
+):
+    return await create_reservation_payment_request_by_manager(
+        reservation_id=reservation_id,
+        amount=payload.amount,
+        note=payload.note,
+        current_manager=current_manager,
+        db=db,
+    )
 
 
 @router.put("/chargers/{charger_id}", response_model=ChargerOut)

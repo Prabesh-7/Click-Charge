@@ -186,6 +186,46 @@ async def create_slot_by_manager(
     return {"message": "Slot created successfully"}
 
 
+async def create_slot_by_staff(
+    data: SlotCreate,
+    current_staff: User,
+    db: AsyncSession,
+) -> dict:
+    if not current_staff.station_id:
+        raise HTTPException(status_code=404, detail="Staff is not assigned to any station")
+
+    connector_result = await db.execute(
+        select(Connector)
+        .join(Charger, Charger.charger_id == Connector.charger_id)
+        .where(
+            Connector.connector_id == data.connector_id,
+            Charger.station_id == current_staff.station_id,
+        )
+    )
+    connector = connector_result.scalar_one_or_none()
+
+    if not connector:
+        raise HTTPException(status_code=404, detail="Connector not found")
+
+    start_dt, end_dt = _validate_slot_time_window(data.start_time, data.end_time)
+    _validate_slot_business_window(start_dt, end_dt)
+
+    await _validate_slot_overlap(connector.connector_id, start_dt, end_dt, db)
+
+    slot = ConnectorSlot(
+        connector_id=connector.connector_id,
+        start_time=start_dt,
+        end_time=end_dt,
+        status=SlotStatus.OPEN,
+        created_by_manager_id=current_staff.user_id,
+    )
+
+    db.add(slot)
+    await db.commit()
+
+    return {"message": "Slot created successfully"}
+
+
 async def _get_station_slots(
     station_id: int,
     db: AsyncSession,

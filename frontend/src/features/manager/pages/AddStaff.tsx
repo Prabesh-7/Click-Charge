@@ -48,117 +48,123 @@ export default function AddStaff() {
   };
 
   return (
-    <main className="container mx-auto mt-5 max-w-lg">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Create Staff</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          Fill in the details below to register a new staff for your station.
-        </p>
-      </div>
+    <main className="min-h-screen bg-white px-6 py-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900">Create Staff</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Register a new staff member for your station.
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Username */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Username
-          </FieldLabel>
-          <Input
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="e.g. staffuser"
-            {...register("user_name")}
-          />
-          {errors.user_name && (
-            <p className="text-xs text-red-600 mt-1">
-              {errors.user_name.message}
-            </p>
-          )}
-        </Field>
+        <div className="rounded-md border border-gray-200 bg-white p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Username */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Username
+              </FieldLabel>
+              <Input
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="e.g. staffuser"
+                {...register("user_name")}
+              />
+              {errors.user_name && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.user_name.message}
+                </p>
+              )}
+            </Field>
 
-        {/* Email */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Email
-          </FieldLabel>
-          <Input
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="staff@example.com"
-            {...register("email")}
-          />
-          {errors.email && (
-            <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>
-          )}
-        </Field>
+            {/* Email */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Email
+              </FieldLabel>
+              <Input
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="staff@example.com"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.email.message}
+                </p>
+              )}
+            </Field>
 
-        {/* Password */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Password
-          </FieldLabel>
-          <div className="relative">
-            <Input
-              className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400 pr-12"
-              type={showPassword ? "text" : "password"}
-              placeholder="Min. 8 characters"
-              {...register("password")}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800 transition-colors p-1"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+            {/* Password */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Password
+              </FieldLabel>
+              <div className="relative">
+                <Input
+                  className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500 pr-12"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 8 characters"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors p-1"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </Field>
+
+            {/* Phone Number */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Phone Number
+              </FieldLabel>
+              <Input
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="e.g. 9800000000"
+                {...register("phone_number")}
+              />
+              {errors.phone_number && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.phone_number.message}
+                </p>
+              )}
+            </Field>
+
+            {/* Vehicle (optional) */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Vehicle (optional)
+              </FieldLabel>
+              <Input
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="e.g. Hyundai Kona"
+                {...register("vehicle")}
+              />
+              {errors.vehicle && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.vehicle.message}
+                </p>
+              )}
+            </Field>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition-colors disabled:opacity-50"
             >
-              {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="text-xs text-red-600 mt-1">
-              {errors.password.message}
-            </p>
-          )}
-        </Field>
-
-        {/* Phone Number */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Phone Number
-          </FieldLabel>
-          <Input
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="e.g. 9800000000"
-            {...register("phone_number")}
-          />
-          {errors.phone_number && (
-            <p className="text-xs text-red-600 mt-1">
-              {errors.phone_number.message}
-            </p>
-          )}
-        </Field>
-
-        {/* Vehicle (optional) */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Vehicle (optional)
-          </FieldLabel>
-          <Input
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="e.g. Hyundai Kona"
-            {...register("vehicle")}
-          />
-          {errors.vehicle && (
-            <p className="text-xs text-red-600 mt-1">
-              {errors.vehicle.message}
-            </p>
-          )}
-        </Field>
-
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-        >
-          {isSubmitting ? "Creating..." : "Create Staff"}
-        </Button>
-      </form>
+              {isSubmitting ? "Creating..." : "Create Staff"}
+            </Button>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

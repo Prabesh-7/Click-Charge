@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerOut, ChargerControlResponse, ChargerMeterValues
 from app.schemas.reservation import ReservationOut
-from app.schemas.slot import SlotOut
+from app.schemas.slot import SlotCreate, SlotOut
 from app.services.charger_service import (
     get_chargers_by_staff,
     start_charging_by_staff,
@@ -17,7 +17,11 @@ from app.services.charger_service import (
     get_reservations_by_staff,
     get_meter_values_by_staff,
 )
-from app.services.slot_service import get_slots_by_staff, release_slot_reservation_by_staff
+from app.services.slot_service import (
+    create_slot_by_staff,
+    get_slots_by_staff,
+    release_slot_reservation_by_staff,
+)
 from app.utils.dependencies import require_staff
 
 router = APIRouter(prefix="/staff", tags=["Staff"])
@@ -99,6 +103,15 @@ async def get_station_slots(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_slots_by_staff(current_staff, db, slot_date)
+
+
+@router.post("/slots")
+async def create_slot(
+    data: SlotCreate,
+    current_staff: User = Depends(require_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    return await create_slot_by_staff(data, current_staff, db)
 
 
 @router.post("/slots/{slot_id}/release")

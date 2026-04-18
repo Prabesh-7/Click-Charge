@@ -229,10 +229,10 @@ export default function Reservations() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+    <main className="min-h-screen bg-white px-4 py-7 md:px-6 md:py-10">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <section className="rounded-md border border-gray-200 bg-white p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Reservations</h1>
               <p className="mt-1 text-sm text-gray-600">
@@ -255,25 +255,25 @@ export default function Reservations() {
         )}
 
         {success && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
             {success}
           </div>
         )}
 
         {loading && (
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
             Loading reservations...
           </div>
         )}
 
         {!loading && reservedSlots.length === 0 && (
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
             No active reservations.
           </div>
         )}
 
         {!loading && reservedSlots.length > 0 && (
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <section className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-5 py-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -299,7 +299,7 @@ export default function Reservations() {
               </div>
             </div>
 
-            <div className="space-y-4 p-4 md:p-5">
+            <div className="space-y-4 p-5 md:p-6">
               {groupedReservations.map((chargerGroup) => {
                 const connectorNumbers = Array.from(
                   new Set(
@@ -310,9 +310,9 @@ export default function Reservations() {
                 return (
                   <section
                     key={chargerGroup.charger_id}
-                    className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                    className="overflow-hidden rounded-md border border-gray-200 bg-white"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-gray-50 px-4 py-4">
                       <div>
                         <p className="text-sm font-semibold text-gray-900">
                           {chargerGroup.charger_name}
@@ -340,9 +340,9 @@ export default function Reservations() {
                       {chargerGroup.slots.map((slot) => (
                         <article
                           key={slot.slot_id}
-                          className="grid grid-cols-1 gap-3 px-4 py-4 transition-colors hover:bg-gray-50 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto] md:items-center"
+                          className="grid grid-cols-1 gap-4 px-4 py-4 transition-colors hover:bg-gray-50 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto] md:items-center"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4">
                             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
                               {getInitials(slot.reserved_by_user_name)}
                             </span>
@@ -381,7 +381,7 @@ export default function Reservations() {
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                            <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                            <span className="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700">
                               Reserved
                             </span>
                             <button
@@ -393,7 +393,7 @@ export default function Reservations() {
                                 actionLoadingKey !== null ||
                                 !slot.reserved_by_email
                               }
-                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                              className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                             >
                               {actionLoadingKey ===
                               getActionKey(slot.slot_id, "confirm")

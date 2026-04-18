@@ -23,3 +23,5 @@ class ReservationOut(BaseModel):
     reserved_by_user_name: Optional[str] = None
     reserved_by_email: Optional[str] = None
     reserved_by_phone_number: Optional[str] = None
+    pending_payment_amount: Optional[float] = None
+    pending_payment_count: Optional[int] = None

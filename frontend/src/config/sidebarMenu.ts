@@ -97,6 +97,18 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
       icon: Wrench,
       section: "Operations",
     },
+    {
+      label: "Manage Slots",
+      path: "/staff/manageSlots",
+      icon: ListChecks,
+      section: "Operations",
+    },
+    {
+      label: "Slot List",
+      path: "/staff/slotList",
+      icon: Bell,
+      section: "Operations",
+    },
   ],
 
   manager: [
@@ -133,6 +145,18 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
     {
       label: "Charging Sessions",
       path: "/manager/chargingSessions",
+      icon: ReceiptText,
+      section: "Charger",
+    },
+    {
+      label: "Payments",
+      path: "/manager/sessionRevenue",
+      icon: Banknote,
+      section: "Charger",
+    },
+    {
+      label: "Revenue Reports",
+      path: "/manager/revenueReports",
       icon: ReceiptText,
       section: "Charger",
     },

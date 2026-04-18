@@ -52,102 +52,112 @@ export default function AddCharger() {
   };
 
   return (
-    <main className="container mx-auto mt-5 max-w-lg">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Add Charger</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Add a new charger to one of your stations.
-        </p>
+    <main className="min-h-screen bg-white px-6 py-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-gray-900">Add Charger</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Add a new charger to your station.
+          </p>
+        </div>
+
+        <div className="rounded-md border border-gray-200 bg-white p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Charger Name */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Charger Name
+              </FieldLabel>
+              <Input
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="e.g. Charger A1"
+                {...register("name")}
+              />
+              {errors.name && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.name.message}
+                </p>
+              )}
+            </Field>
+
+            {/* Connector Count */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Number of Connectors
+              </FieldLabel>
+              <Input
+                type="number"
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="e.g. 2"
+                min={1}
+                max={20}
+                {...register("connector_count", {
+                  setValueAs: (value) =>
+                    value === "" ? undefined : Number(value),
+                })}
+              />
+              {errors.connector_count && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.connector_count.message}
+                </p>
+              )}
+            </Field>
+
+            {/* Charger Type */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Charger Type
+              </FieldLabel>
+              <select
+                className="h-10 border border-gray-300 rounded-md px-3 text-sm w-full focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900"
+                {...register("type")}
+              >
+                <option value="">Select type</option>
+                {chargerTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              {errors.type && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.type.message}
+                </p>
+              )}
+            </Field>
+
+            {/* Max Power (kW) */}
+            <Field className="gap-2">
+              <FieldLabel className="text-sm font-medium text-gray-900">
+                Max Power (kW)
+              </FieldLabel>
+              <Input
+                type="number"
+                className="h-10 border border-gray-300 rounded-md focus:ring-1 focus:ring-green-600 focus:border-green-600 transition-colors bg-white text-gray-900 placeholder:text-gray-500"
+                placeholder="e.g. 50"
+                min={1}
+                {...register("max_power_kw", {
+                  setValueAs: (value) =>
+                    value === "" ? undefined : Number(value),
+                })}
+              />
+              {errors.max_power_kw && (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.max_power_kw.message}
+                </p>
+              )}
+            </Field>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? "Adding..." : "Add Charger"}
+            </Button>
+          </form>
+        </div>
       </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Charger Name */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Charger Name
-          </FieldLabel>
-          <Input
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="e.g. Charger A1"
-            {...register("name")}
-          />
-          {errors.name && (
-            <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>
-          )}
-        </Field>
-
-        {/* Connector Count */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Number of Connectors
-          </FieldLabel>
-          <Input
-            type="number"
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="e.g. 2"
-            min={1}
-            max={20}
-            {...register("connector_count", {
-              setValueAs: (value) => (value === "" ? undefined : Number(value)),
-            })}
-          />
-          {errors.connector_count && (
-            <p className="text-xs text-red-600 mt-1">
-              {errors.connector_count.message}
-            </p>
-          )}
-        </Field>
-
-        {/* Charger Type */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Charger Type
-          </FieldLabel>
-          <select
-            className="h-10 border border-gray-300 rounded-lg px-3 text-sm w-full focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900"
-            {...register("type")}
-          >
-            <option value="">Select type</option>
-            {chargerTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          {errors.type && (
-            <p className="text-xs text-red-600 mt-1">{errors.type.message}</p>
-          )}
-        </Field>
-
-        {/* Max Power (kW) */}
-        <Field className="gap-2">
-          <FieldLabel className="text-sm font-medium text-gray-700">
-            Max Power (kW)
-          </FieldLabel>
-          <Input
-            type="number"
-            className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
-            placeholder="e.g. 50"
-            min={1}
-            {...register("max_power_kw", {
-              setValueAs: (value) => (value === "" ? undefined : Number(value)),
-            })}
-          />
-          {errors.max_power_kw && (
-            <p className="text-xs text-red-600 mt-1">
-              {errors.max_power_kw.message}
-            </p>
-          )}
-        </Field>
-
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-        >
-          {isSubmitting ? "Adding..." : "Add Charger"}
-        </Button>
-      </form>
     </main>
   );
 }

@@ -87,9 +87,9 @@ export default function Pricing() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <main className="min-h-screen bg-white px-4 py-7 md:px-6 md:py-10">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <section className="rounded-md border border-gray-200 bg-white p-6">
           <h1 className="text-2xl font-bold text-gray-900">Charger Pricing</h1>
           <p className="mt-1 text-sm text-gray-600">
             Set energy tariff per charger. Session billing is calculated as:
@@ -102,31 +102,31 @@ export default function Pricing() {
         </section>
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
             {success}
           </div>
         )}
 
         {loading && (
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
             Loading charger pricing...
           </div>
         )}
 
         {!loading && sortedChargers.length === 0 && (
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
             No chargers found. Add a charger first, then set pricing.
           </div>
         )}
 
         {!loading && sortedChargers.length > 0 && (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -177,7 +177,7 @@ export default function Pricing() {
                               [charger.charger_id]: e.target.value,
                             }))
                           }
-                          className="h-10 w-40 rounded-lg border border-gray-300 px-3 text-sm"
+                          className="h-10 w-40 rounded-md border border-gray-300 px-3 text-sm focus:ring-1 focus:ring-green-600"
                         />
                       </td>
                       <td className="px-4 py-4 align-top">
@@ -185,7 +185,7 @@ export default function Pricing() {
                           type="button"
                           onClick={() => void handleSave(charger.charger_id)}
                           disabled={savingId === charger.charger_id}
-                          className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                          className="rounded-md bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                         >
                           {savingId === charger.charger_id
                             ? "Saving..."

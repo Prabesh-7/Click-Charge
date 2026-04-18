@@ -62,6 +62,34 @@ export default function StaffDashboard() {
               Start charging and monitor live connector activity.
             </p>
           </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/staff/manageSlots")}
+            className="rounded-xl border border-gray-200 bg-white p-5 text-left shadow-sm transition hover:shadow-md"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Operations
+            </p>
+            <p className="mt-2 text-xl font-bold text-gray-900">Manage Slots</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Monitor and release slot reservations at your station.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/staff/slotList")}
+            className="rounded-xl border border-gray-200 bg-white p-5 text-left shadow-sm transition hover:shadow-md"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Operations
+            </p>
+            <p className="mt-2 text-xl font-bold text-gray-900">Slot List</p>
+            <p className="mt-1 text-sm text-gray-600">
+              View all created slots grouped by charger and connector.
+            </p>
+          </button>
         </section>
       </div>
     </main>

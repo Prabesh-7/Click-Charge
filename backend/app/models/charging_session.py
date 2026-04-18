@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, String, Float, text
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, String, Float, text, Boolean
 from sqlalchemy.sql import func
 
 from app.database import Base, engine
@@ -20,6 +20,9 @@ class ChargingSession(Base):
     invoice_total_energy_kwh = Column(Float, nullable=True)
     invoice_price_per_kwh = Column(Float, nullable=True)
     invoice_total_amount = Column(Float, nullable=True)
+    payment_saved = Column(Boolean, nullable=False, server_default=text("false"))
+    payment_saved_at = Column(DateTime(timezone=True), nullable=True)
+    revenue_amount = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -46,6 +49,9 @@ async def create_tables():
                     invoice_total_energy_kwh DOUBLE PRECISION NULL,
                     invoice_price_per_kwh DOUBLE PRECISION NULL,
                     invoice_total_amount DOUBLE PRECISION NULL,
+                    payment_saved BOOLEAN NOT NULL DEFAULT FALSE,
+                    payment_saved_at TIMESTAMPTZ NULL,
+                    revenue_amount DOUBLE PRECISION NULL,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
@@ -58,6 +64,9 @@ async def create_tables():
         await conn.execute(text("ALTER TABLE charging_sessions ADD COLUMN IF NOT EXISTS invoice_total_energy_kwh DOUBLE PRECISION"))
         await conn.execute(text("ALTER TABLE charging_sessions ADD COLUMN IF NOT EXISTS invoice_price_per_kwh DOUBLE PRECISION"))
         await conn.execute(text("ALTER TABLE charging_sessions ADD COLUMN IF NOT EXISTS invoice_total_amount DOUBLE PRECISION"))
+        await conn.execute(text("ALTER TABLE charging_sessions ADD COLUMN IF NOT EXISTS payment_saved BOOLEAN NOT NULL DEFAULT FALSE"))
+        await conn.execute(text("ALTER TABLE charging_sessions ADD COLUMN IF NOT EXISTS payment_saved_at TIMESTAMPTZ"))
+        await conn.execute(text("ALTER TABLE charging_sessions ADD COLUMN IF NOT EXISTS revenue_amount DOUBLE PRECISION"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_charging_sessions_station_id ON charging_sessions(station_id)"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_charging_sessions_charger_id ON charging_sessions(charger_id)"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_charging_sessions_connector_id ON charging_sessions(connector_id)"))

@@ -18,4 +18,14 @@ class ChargingSessionOut(BaseModel):
     invoice_total_energy_kwh: float | None = None
     invoice_price_per_kwh: float | None = None
     invoice_total_amount: float | None = None
+    payment_saved: bool = False
+    payment_saved_at: datetime | None = None
+    revenue_amount: float | None = None
+
+
+class ChargingRevenueSummaryOut(BaseModel):
+    total_sessions: int
+    paid_sessions: int
+    unpaid_sessions: int
+    total_revenue: float
 

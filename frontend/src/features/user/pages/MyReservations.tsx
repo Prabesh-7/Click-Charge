@@ -11,7 +11,11 @@ import {
   X,
 } from "lucide-react";
 
-import { getUserReservations, type UserReservationItem } from "@/api/userApi";
+import {
+  getUserReservations,
+  payPendingReservationAmount,
+  type UserReservationItem,
+} from "@/api/userApi";
 import { toast } from "sonner";
 
 const formatDateTime = (value: string | null) => {
@@ -96,6 +100,9 @@ const getTypeLabel = (
 export default function MyReservations() {
   const [reservations, setReservations] = useState<UserReservationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payingReservationId, setPayingReservationId] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [showPreviousReservations, setShowPreviousReservations] =
     useState(false);
@@ -119,6 +126,24 @@ export default function MyReservations() {
   useEffect(() => {
     void fetchReservations();
   }, []);
+
+  const handlePayPending = async (reservationId: number) => {
+    try {
+      setPayingReservationId(reservationId);
+      const result = await payPendingReservationAmount(reservationId);
+      toast.success(result.message, {
+        description: `Paid NPR ${result.paid_amount.toFixed(2)} | Balance NPR ${result.remaining_balance.toFixed(2)}`,
+      });
+      await fetchReservations();
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.detail ||
+        "Failed to pay pending amount from wallet.";
+      toast.error("Payment failed", { description: message });
+    } finally {
+      setPayingReservationId(null);
+    }
+  };
 
   const sortedReservations = useMemo(() => {
     return [...reservations].sort((a, b) => {
@@ -373,19 +398,56 @@ export default function MyReservations() {
                         </div>
 
                         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-2">
-                            <ReceiptText size={14} />
-                            <span>
-                              {reservation.reserved_by_user_name ||
-                                "Reserved by you"}
-                            </span>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <ReceiptText size={14} />
+                              <span>
+                                {reservation.reserved_by_user_name ||
+                                  "Reserved by you"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <PlugZap size={14} />
+                              <span>
+                                {reservation.reserved_by_email ||
+                                  "No email on file"}
+                              </span>
+                            </div>
+                            {(reservation.pending_payment_amount ?? 0) > 0 && (
+                              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                Pending Amount: NPR{" "}
+                                {Number(
+                                  reservation.pending_payment_amount ?? 0,
+                                ).toFixed(2)}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <PlugZap size={14} />
-                            <span>
-                              {reservation.reserved_by_email ||
-                                "No email on file"}
-                            </span>
+
+                          <div>
+                            {(reservation.pending_payment_amount ?? 0) > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handlePayPending(
+                                    reservation.reservation_id,
+                                  )
+                                }
+                                disabled={
+                                  payingReservationId ===
+                                  reservation.reservation_id
+                                }
+                                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {payingReservationId ===
+                                reservation.reservation_id
+                                  ? "Paying..."
+                                  : "Pay From Wallet"}
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-gray-400">
+                                No pending payment
+                              </span>
+                            )}
                           </div>
                         </div>
                       </article>

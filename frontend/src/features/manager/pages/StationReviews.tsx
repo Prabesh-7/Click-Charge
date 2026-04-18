@@ -59,7 +59,7 @@ export default function StationReviews() {
   }, [reviews, query]);
 
   return (
-    <main className="p-6">
+    <main className="min-h-screen bg-white p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Station Reviews</h1>
         <p className="mt-1 text-sm text-gray-500">
@@ -76,9 +76,9 @@ export default function StationReviews() {
       {loading ? (
         <div className="py-8 text-center text-gray-500">Loading reviews...</div>
       ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
               <div className="mb-1 flex items-center gap-2 text-sm text-amber-700">
                 <Star size={16} className="fill-amber-400 text-amber-500" />
                 <span>Average Rating</span>
@@ -90,7 +90,7 @@ export default function StationReviews() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="rounded-md border border-gray-200 bg-white p-4">
               <div className="mb-1 flex items-center gap-2 text-sm text-gray-600">
                 <MessageSquare size={16} />
                 <span>Total Reviews</span>
@@ -101,7 +101,7 @@ export default function StationReviews() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="rounded-md border border-gray-200 bg-white p-4">
             <div className="relative">
               <Search
                 size={15}
@@ -112,7 +112,7 @@ export default function StationReviews() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by user name, email, or review text"
-                className="h-10 w-full rounded-md border border-gray-300 pl-9 pr-3 text-sm text-gray-800 outline-none focus:border-blue-500"
+                className="h-10 w-full rounded-md border border-gray-300 pl-9 pr-3 text-sm text-gray-900 outline-none focus:ring-1 focus:ring-green-600"
               />
             </div>
           </div>
@@ -122,13 +122,13 @@ export default function StationReviews() {
               No reviews found.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {filteredReviews.map((review) => (
                 <article
                   key={review.review_id}
-                  className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                  className="rounded-md border border-gray-200 bg-white p-5"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
                         {review.user_name || "User"}

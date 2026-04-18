@@ -34,10 +34,15 @@ import Pricing from "@/features/manager/pages/Pricing";
 import ChargingSessions from "@/features/manager/pages/ChargingSessions";
 import LiveSession from "@/features/manager/pages/LiveSession";
 import Reservations from "@/features/manager/pages/Reservations";
+import SessionRevenue from "@/features/manager/pages/SessionRevenue";
+import RevenueReports from "@/features/manager/pages/RevenueReports";
 import StaffDashboard from "@/features/staff/pages/StaffDashboard";
 import MyStaff from "@/features/manager/pages/MyStaff";
 import StaffMyChargers from "@/features/staff/pages/MyChargers";
 import StaffChargerControl from "@/features/staff/pages/ChargerControl";
+import StaffLiveSession from "@/features/staff/pages/LiveSession";
+import StaffManageSlots from "@/features/staff/pages/ManageSlots";
+import StaffSlotList from "@/features/staff/pages/SlotList";
 
 export default function AppRoutes() {
   return (
@@ -90,6 +95,8 @@ export default function AppRoutes() {
         <Route path="myChargers" element={<MyChargers />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="chargingSessions" element={<ChargingSessions />} />
+        <Route path="sessionRevenue" element={<SessionRevenue />} />
+        <Route path="revenueReports" element={<RevenueReports />} />
         <Route path="chargerControl" element={<ChargerControl />} />
         <Route path="chargerControl/live-session" element={<LiveSession />} />
         <Route path="manageSlots" element={<ManageSlots />} />
@@ -102,6 +109,12 @@ export default function AppRoutes() {
         <Route path="dashboard" element={<StaffDashboard />} />
         <Route path="myChargers" element={<StaffMyChargers />} />
         <Route path="chargerControl" element={<StaffChargerControl />} />
+        <Route
+          path="chargerControl/live-session"
+          element={<StaffLiveSession />}
+        />
+        <Route path="manageSlots" element={<StaffManageSlots />} />
+        <Route path="slotList" element={<StaffSlotList />} />
       </Route>
     </Routes>
   );

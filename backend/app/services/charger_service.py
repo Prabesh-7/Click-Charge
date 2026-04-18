@@ -988,6 +988,9 @@ async def get_charging_sessions_by_manager(
             ChargingSession.invoice_total_energy_kwh,
             ChargingSession.invoice_price_per_kwh,
             ChargingSession.invoice_total_amount,
+            ChargingSession.payment_saved,
+            ChargingSession.payment_saved_at,
+            ChargingSession.revenue_amount,
         )
         .join(Charger, Charger.charger_id == ChargingSession.charger_id)
         .join(Connector, Connector.connector_id == ChargingSession.connector_id)
@@ -997,6 +1000,108 @@ async def get_charging_sessions_by_manager(
 
     rows = result.mappings().all()
     return [dict(row) for row in rows]
+
+
+async def save_charging_session_payment_by_manager(
+    session_id: int,
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    station_result = await db.execute(
+        select(Station).where(Station.manager_id == current_manager.user_id)
+    )
+    station = station_result.scalar_one_or_none()
+
+    if not station:
+        raise HTTPException(status_code=404, detail="No station assigned to this manager")
+
+    result = await db.execute(
+        select(ChargingSession).where(
+            ChargingSession.session_id == session_id,
+            ChargingSession.station_id == station.station_id,
+        )
+    )
+    session = result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Charging session not found")
+
+    if session.end_time is None:
+        raise HTTPException(status_code=400, detail="Cannot save payment for active charging session")
+
+    if session.invoice_total_amount is None:
+        raise HTTPException(status_code=400, detail="Invoice is not available for this charging session")
+
+    if session.payment_saved:
+        return {
+            "message": "Payment already saved",
+            "session_id": session.session_id,
+            "payment_saved": True,
+            "revenue_amount": float(session.revenue_amount or session.invoice_total_amount or 0.0),
+        }
+
+    session.payment_saved = True
+    session.payment_saved_at = datetime.now(tz=timezone.utc)
+    session.revenue_amount = float(session.invoice_total_amount)
+
+    await db.commit()
+
+    return {
+        "message": "Payment saved successfully",
+        "session_id": session.session_id,
+        "payment_saved": True,
+        "revenue_amount": float(session.revenue_amount or 0.0),
+    }
+
+
+async def get_charging_revenue_summary_by_manager(
+    current_manager: User,
+    db: AsyncSession,
+) -> dict:
+    station_result = await db.execute(
+        select(Station).where(Station.manager_id == current_manager.user_id)
+    )
+    station = station_result.scalar_one_or_none()
+
+    if not station:
+        return {
+            "total_sessions": 0,
+            "paid_sessions": 0,
+            "unpaid_sessions": 0,
+            "total_revenue": 0.0,
+        }
+
+    total_sessions_result = await db.execute(
+        select(func.count(ChargingSession.session_id)).where(
+            ChargingSession.station_id == station.station_id,
+            ChargingSession.end_time.is_not(None),
+            ChargingSession.invoice_total_amount.is_not(None),
+        )
+    )
+    total_sessions = int(total_sessions_result.scalar() or 0)
+
+    paid_sessions_result = await db.execute(
+        select(func.count(ChargingSession.session_id)).where(
+            ChargingSession.station_id == station.station_id,
+            ChargingSession.payment_saved.is_(True),
+        )
+    )
+    paid_sessions = int(paid_sessions_result.scalar() or 0)
+
+    total_revenue_result = await db.execute(
+        select(func.coalesce(func.sum(ChargingSession.revenue_amount), 0.0)).where(
+            ChargingSession.station_id == station.station_id,
+            ChargingSession.payment_saved.is_(True),
+        )
+    )
+    total_revenue = float(total_revenue_result.scalar() or 0.0)
+
+    return {
+        "total_sessions": total_sessions,
+        "paid_sessions": paid_sessions,
+        "unpaid_sessions": max(0, total_sessions - paid_sessions),
+        "total_revenue": round(total_revenue, 2),
+    }
 
 
 async def edit_charger_by_manager(

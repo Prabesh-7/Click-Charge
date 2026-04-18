@@ -3,16 +3,24 @@ import api from "./axiosInstance";
 export interface StaffSlot {
   slot_id: number;
   connector_id: number;
+  connector_number: number;
   charger_id: number;
   charger_name: string;
+  charger_type: string;
   station_id: number;
-  station_name: string;
+  station_name?: string;
   start_time: string;
   end_time: string;
   status: string;
   reserved_by_user_id: number | null;
-  reserved_by_username: string | null;
+  reserved_by_user_name?: string | null;
+  reserved_by_username?: string | null;
+  reserved_by_email?: string | null;
+  reserved_by_phone_number?: string | null;
   reserved_at: string | null;
+  created_by_manager_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const authHeader = () => {
@@ -96,6 +104,19 @@ export const getStaffSlots = async (slotDate?: string): Promise<StaffSlot[]> => 
     params: slotDate ? { slot_date: slotDate } : undefined,
   });
   return response.data as StaffSlot[];
+};
+
+export interface CreateStaffSlotPayload {
+  connector_id: number;
+  start_time: string;
+  end_time: string;
+}
+
+export const createStaffSlot = async (payload: CreateStaffSlotPayload) => {
+  const response = await api.post('/staff/slots', payload, {
+    headers: authHeader(),
+  });
+  return response.data;
 };
 
 export const releaseStaffSlotReservation = async (slotId: number) => {

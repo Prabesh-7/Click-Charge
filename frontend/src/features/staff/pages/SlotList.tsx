@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getManagerSlots, type Slot } from "@/api/managerApi";
+import { getStaffSlots, type StaffSlot } from "@/api/staffApi";
 
 const getTodayDateParam = () => {
   const now = new Date();
@@ -49,16 +49,16 @@ const getStatusClass = (status: string) => {
   return "bg-gray-100 text-gray-700";
 };
 
-export default function SlotList() {
+export default function StaffSlotList() {
   const navigate = useNavigate();
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slots, setSlots] = useState<StaffSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSlots = async () => {
     try {
       setLoading(true);
-      const data = await getManagerSlots(getTodayDateParam());
+      const data = await getStaffSlots(getTodayDateParam());
       setSlots(data);
       setError(null);
     } catch (err: any) {
@@ -111,7 +111,7 @@ export default function SlotList() {
         charger_id: number;
         charger_name: string;
         charger_type: string;
-        slots: Slot[];
+        slots: StaffSlot[];
       }
     >();
 
@@ -145,13 +145,13 @@ export default function SlotList() {
                 Created Slots
               </h1>
               <p className="mt-1 text-sm text-gray-600">
-                View all created slots with clean, readable scheduling details.
+                View all today slots grouped by charger.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() => navigate("/manager/manageSlots")}
+              onClick={() => navigate("/staff/manageSlots")}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               Back to Manage Slots

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  getChargerMeterValues,
-  getMyChargers,
-  stopCharging,
-} from "@/api/managerApi";
+  getChargerMeterValuesByStaff,
+  getMyChargersByStaff,
+  stopChargingByStaff,
+} from "@/api/staffApi";
 import { toast } from "sonner";
 
 type MeterValues = {
@@ -67,7 +67,7 @@ type ActiveConnector = {
   connectorLabel: string;
 };
 
-export default function LiveSession() {
+export default function StaffLiveSession() {
   const navigate = useNavigate();
   const location = useLocation();
   const preferredSession =
@@ -102,7 +102,6 @@ export default function LiveSession() {
       });
     });
 
-    // Keep recently opened connector at top when possible.
     if (!preferredSession) return list;
 
     return [...list].sort((a, b) => {
@@ -124,7 +123,7 @@ export default function LiveSession() {
   const fetchChargers = async () => {
     try {
       setLoading(true);
-      const data = await getMyChargers();
+      const data = await getMyChargersByStaff();
       setChargers(data);
       setError(null);
     } catch (err: any) {
@@ -143,7 +142,7 @@ export default function LiveSession() {
     const results = await Promise.all(
       sessions.map(async (item) => {
         try {
-          const data = await getChargerMeterValues(
+          const data = await getChargerMeterValuesByStaff(
             item.chargerId,
             item.connectorId,
           );
@@ -193,7 +192,7 @@ export default function LiveSession() {
 
     try {
       setStopLoadingKey(key);
-      const response = await stopCharging(chargerId, connectorId);
+      const response = await stopChargingByStaff(chargerId, connectorId);
       if (response?.invoice) {
         const invoice = response.invoice as ChargingInvoice;
         setLatestInvoice(invoice);
@@ -239,7 +238,7 @@ export default function LiveSession() {
             </div>
             <button
               type="button"
-              onClick={() => navigate("/manager/chargerControl")}
+              onClick={() => navigate("/staff/chargerControl")}
               className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             >
               Back To Charger Control

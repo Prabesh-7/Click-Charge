@@ -161,7 +161,7 @@ export default function MyStaff() {
   };
 
   return (
-    <main className="p-6">
+    <main className="min-h-screen bg-white p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">My Staff</h1>
@@ -172,7 +172,7 @@ export default function MyStaff() {
         {staffMembers.length > 0 && (
           <button
             onClick={handleAddClick}
-            className="shrink-0 h-11 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+            className="shrink-0 rounded-md bg-green-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-green-700 flex items-center gap-2"
           >
             <Plus size={20} />
             Add Staff
@@ -193,7 +193,7 @@ export default function MyStaff() {
       )}
 
       {!loading && !error && (
-        <div className="bg-white border border-[#B6B6B6] rounded-lg shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
           {staffMembers.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
@@ -205,7 +205,7 @@ export default function MyStaff() {
               </p>
               <button
                 onClick={handleAddClick}
-                className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
+                className="rounded-md bg-green-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-green-700 flex items-center gap-2"
               >
                 <Plus size={20} />
                 Add Staff Member
@@ -268,7 +268,7 @@ export default function MyStaff() {
 
       {showEditModal && editingStaff && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-md border border-gray-200 bg-white p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Edit Staff
             </h2>
@@ -279,7 +279,7 @@ export default function MyStaff() {
                   Username
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600"
                   placeholder="e.g. staffuser"
                   {...register("user_name")}
                 />
@@ -293,7 +293,7 @@ export default function MyStaff() {
               <Field className="gap-2">
                 <FieldLabel className="text-base font-medium">Email</FieldLabel>
                 <Input
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600"
                   placeholder="staff@example.com"
                   {...register("email")}
                 />
@@ -308,7 +308,7 @@ export default function MyStaff() {
                 </FieldLabel>
                 <div className="relative">
                   <Input
-                    className="h-10 border-[#B6B6B6] pr-12"
+                    className="h-10 rounded-md border border-gray-300 pr-12 focus:ring-1 focus:ring-green-600"
                     type={showPassword ? "text" : "password"}
                     placeholder="Min. 8 characters (leave empty to keep current)"
                     {...register("password")}
@@ -336,7 +336,7 @@ export default function MyStaff() {
                   Phone Number
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600"
                   placeholder="e.g. 9800000000"
                   {...register("phone_number")}
                 />
@@ -352,7 +352,7 @@ export default function MyStaff() {
                   Vehicle (optional)
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-[#B6B6B6]"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600"
                   placeholder="e.g. Hyundai Kona"
                   {...register("vehicle")}
                 />
@@ -363,7 +363,7 @@ export default function MyStaff() {
                 )}
               </Field>
 
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <Button
                   type="button"
                   onClick={handleCloseModal}
@@ -374,7 +374,7 @@ export default function MyStaff() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-10 bg-green-400"
+                  className="flex-1 h-10 rounded-md bg-green-600 text-white hover:bg-green-700"
                 >
                   {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>
@@ -386,7 +386,7 @@ export default function MyStaff() {
 
       {showAddModal && (
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md rounded-md border border-gray-200">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
                 Add Staff Member
@@ -399,7 +399,7 @@ export default function MyStaff() {
                   Username
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. staffuser"
                   {...registerAdd("user_name")}
                 />
@@ -415,7 +415,7 @@ export default function MyStaff() {
                   Email
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="staff@example.com"
                   {...registerAdd("email")}
                 />
@@ -432,7 +432,7 @@ export default function MyStaff() {
                 </FieldLabel>
                 <div className="relative">
                   <Input
-                    className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400 pr-12"
+                    className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400 pr-12"
                     type={showPassword ? "text" : "password"}
                     placeholder="Min. 8 characters"
                     {...registerAdd("password")}
@@ -460,7 +460,7 @@ export default function MyStaff() {
                   Phone Number
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. 9800000000"
                   {...registerAdd("phone_number")}
                 />
@@ -476,7 +476,7 @@ export default function MyStaff() {
                   Vehicle (optional)
                 </FieldLabel>
                 <Input
-                  className="h-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
+                  className="h-10 rounded-md border border-gray-300 focus:ring-1 focus:ring-green-600 focus:border-transparent transition-colors bg-white text-gray-900 placeholder:text-gray-400"
                   placeholder="e.g. Hyundai Kona"
                   {...registerAdd("vehicle")}
                 />
@@ -487,7 +487,7 @@ export default function MyStaff() {
                 )}
               </Field>
 
-              <DialogFooter className="gap-3 sm:flex-row">
+              <DialogFooter className="gap-4 sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
@@ -499,7 +499,7 @@ export default function MyStaff() {
                 <Button
                   type="submit"
                   disabled={isAddSubmitting}
-                  className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="h-10 bg-green-600 hover:bg-green-700 text-white"
                 >
                   {isAddSubmitting ? "Adding..." : "Add Staff"}
                 </Button>

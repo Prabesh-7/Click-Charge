@@ -3,25 +3,6 @@ import {
   getManagerChargingSessions,
   type ChargingSessionItem,
 } from "@/api/managerApi";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-
-const formatDateTime = (value: string | null) => {
-  if (!value) return "In Progress";
-  return new Date(value).toLocaleString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 const formatSessionDate = (value: string) => {
   return new Date(value).toLocaleDateString(undefined, {
@@ -80,8 +61,6 @@ export default function ChargingSessions() {
   const [sessions, setSessions] = useState<ChargingSessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSession, setSelectedSession] =
-    useState<ChargingSessionItem | null>(null);
 
   const fetchSessions = async () => {
     try {
@@ -127,9 +106,9 @@ export default function ChargingSessions() {
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <main className="min-h-screen bg-white px-4 py-7 md:px-6 md:py-10">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <section className="rounded-md border border-gray-200 bg-white p-6">
           <h1 className="text-2xl font-bold text-gray-900">
             Charging Sessions
           </h1>
@@ -140,8 +119,8 @@ export default function ChargingSessions() {
         </section>
 
         {!loading && (
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-md border border-gray-200 bg-white px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-gray-500">
                 Total Sessions
               </p>
@@ -149,11 +128,11 @@ export default function ChargingSessions() {
                 {todaySessions.length}
               </p>
             </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-emerald-700">
+            <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-green-700">
                 In Progress
               </p>
-              <p className="mt-1 text-2xl font-bold text-emerald-900">
+              <p className="mt-1 text-2xl font-bold text-green-900">
                 {activeSessionsCount}
               </p>
             </div>
@@ -161,215 +140,125 @@ export default function ChargingSessions() {
         )}
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {loading && (
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
             Loading charging sessions...
           </div>
         )}
 
         {!loading && todaySessions.length === 0 && (
-          <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-gray-500 shadow-sm">
+          <div className="rounded-md border border-gray-200 bg-white px-6 py-12 text-center text-gray-500">
             No charging sessions found for today.
           </div>
         )}
 
         {!loading && todaySessions.length > 0 && (
-          <section className="space-y-3">
-            {todaySessions.map((session) => {
-              const isActive = !session.end_time;
+          <section className="overflow-hidden rounded-md border border-gray-200 bg-white">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="border-b border-gray-200 bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Session
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Time Range
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Duration
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Charger
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Connector
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Invoice
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Amount
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todaySessions.map((session) => {
+                    const isActive = !session.end_time;
 
-              return (
-                <article
-                  key={session.session_id}
-                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        Session #{session.session_id}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {formatSessionDate(session.start_time)}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        isActive
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {isActive ? "In Progress" : "Completed"}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 sm:pt-1">
-                        Charger
-                      </p>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {session.charger_name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ID {session.charger_id}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 sm:pt-1">
-                        Connector
-                      </p>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          Connector {session.connector_number}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ID {session.connector_id}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-1 gap-y-3 text-sm sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 sm:pt-1">
-                        Time
-                      </p>
-                      <div>
-                        <p className="font-semibold text-gray-900">
+                    return (
+                      <tr
+                        key={session.session_id}
+                        className="border-b border-gray-200 hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                          #{session.session_id}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {formatSessionDate(session.start_time)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
                           {formatTimeRange(
                             session.start_time,
                             session.end_time,
                           )}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Duration:{" "}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
                           {formatDuration(session.start_time, session.end_time)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-gray-500">
-                          Invoice
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-gray-900">
-                          {session.invoice_id ? "Available" : "Pending"}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={!session.invoice_id}
-                        onClick={() => setSelectedSession(session)}
-                      >
-                        View Invoice
-                      </Button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <p className="font-medium">{session.charger_name}</p>
+                          <p className="text-xs text-gray-500">
+                            ID {session.charger_id}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <p className="font-medium">
+                            Connector {session.connector_number}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            ID {session.connector_id}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {session.invoice_id || "Pending"}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                          {formatAmount(
+                            session.invoice_total_amount,
+                            session.invoice_currency,
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              isActive
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {isActive ? "In Progress" : "Completed"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
       </div>
-
-      <Dialog
-        open={Boolean(selectedSession)}
-        onOpenChange={(open) => {
-          if (!open) setSelectedSession(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Charging Session Invoice</DialogTitle>
-          </DialogHeader>
-
-          {!selectedSession?.invoice_id ? (
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Invoice is not available for this session.
-            </div>
-          ) : (
-            <div className="space-y-3 text-sm text-gray-700">
-              <div className="grid grid-cols-2 gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="text-gray-500">Invoice ID</p>
-                <p className="font-semibold text-gray-900">
-                  {selectedSession.invoice_id}
-                </p>
-
-                <p className="text-gray-500">Issued At</p>
-                <p className="font-medium text-gray-900">
-                  {formatDateTime(selectedSession.invoice_issued_at)}
-                </p>
-
-                <p className="text-gray-500">Session Time</p>
-                <p className="font-medium text-gray-900">
-                  {formatTimeRange(
-                    selectedSession.start_time,
-                    selectedSession.end_time,
-                  )}
-                </p>
-
-                <p className="text-gray-500">Session Date</p>
-                <p className="font-medium text-gray-900">
-                  {formatSessionDate(selectedSession.start_time)}
-                </p>
-
-                <p className="text-gray-500">Charger</p>
-                <p className="font-medium text-gray-900">
-                  {selectedSession.charger_name} (ID{" "}
-                  {selectedSession.charger_id})
-                </p>
-
-                <p className="text-gray-500">Connector</p>
-                <p className="font-medium text-gray-900">
-                  Connector {selectedSession.connector_number} (ID{" "}
-                  {selectedSession.connector_id})
-                </p>
-
-                <p className="text-gray-500">Energy</p>
-                <p className="font-medium text-gray-900">
-                  {selectedSession.invoice_total_energy_kwh?.toFixed(3) ??
-                    "N/A"}{" "}
-                  kWh
-                </p>
-
-                <p className="text-gray-500">Price Per kWh</p>
-                <p className="font-medium text-gray-900">
-                  {formatAmount(
-                    selectedSession.invoice_price_per_kwh,
-                    selectedSession.invoice_currency,
-                  )}
-                </p>
-
-                <p className="text-gray-500">Total Amount</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {formatAmount(
-                    selectedSession.invoice_total_amount,
-                    selectedSession.invoice_currency,
-                  )}
-                </p>
-              </div>
-
-              <p className="text-xs text-gray-500">
-                Showing invoice in this list is practical because managers can
-                verify billing per session instantly without leaving the page.
-              </p>
-            </div>
-          )}
-
-          <DialogFooter showCloseButton />
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }

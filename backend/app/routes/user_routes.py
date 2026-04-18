@@ -11,6 +11,7 @@ from app.schemas.slot import SlotOut
 from app.schemas.user_station import UserStationOut
 from app.schemas.userValidation import UserOut, UserProfileUpdate
 from app.services.reservation_service import get_reservations_by_user
+from app.services.reservation_service import pay_pending_reservation_amount_by_user
 from app.services.user_service import get_available_stations_for_user, update_user_profile
 from app.services.station_review_service import (
     upsert_station_review,
@@ -98,6 +99,19 @@ async def get_my_reservations(
     db: AsyncSession = Depends(get_db),
 ):
     return await get_reservations_by_user(current_user, db)
+
+
+@router.post("/reservations/{reservation_id}/pay-pending")
+async def pay_pending_reservation_amount(
+    reservation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await pay_pending_reservation_amount_by_user(
+        reservation_id=reservation_id,
+        current_user=current_user,
+        db=db,
+    )
 
 
 @router.get("/stations/{station_id}/slots", response_model=list[SlotOut])
