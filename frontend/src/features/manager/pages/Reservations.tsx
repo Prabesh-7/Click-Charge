@@ -6,6 +6,8 @@ import {
   sendManagerSlotConfirmation,
   type Slot,
 } from "@/api/managerApi";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { toast } from "sonner";
 
 const getTodayDateParam = () => {
@@ -228,6 +230,22 @@ export default function Reservations() {
     }
   };
 
+  const {
+    paginatedItems: paginatedGroupedReservations,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(groupedReservations, {
+    initialPageSize: 5,
+    pageSizeOptions: [5, 10, 20],
+  });
+
   return (
     <main className="min-h-screen bg-white px-4 py-7 md:px-6 md:py-10">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -300,7 +318,7 @@ export default function Reservations() {
             </div>
 
             <div className="space-y-4 p-5 md:p-6">
-              {groupedReservations.map((chargerGroup) => {
+              {paginatedGroupedReservations.map((chargerGroup) => {
                 const connectorNumbers = Array.from(
                   new Set(
                     chargerGroup.slots.map((slot) => slot.connector_number),
@@ -432,6 +450,17 @@ export default function Reservations() {
                 );
               })}
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              pageSizeOptions={pageSizeOptions}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </section>
         )}
       </div>

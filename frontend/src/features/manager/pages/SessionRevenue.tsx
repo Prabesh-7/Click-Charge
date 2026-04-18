@@ -9,6 +9,8 @@ import {
   type ChargingSessionItem,
   type ReservationItem,
 } from "@/api/managerApi";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { toast } from "sonner";
 
 const formatMoney = (
@@ -205,6 +207,22 @@ export default function SessionRevenue() {
     );
   }, [completedInvoiceSessions, activeReservations]);
 
+  const {
+    paginatedItems: paginatedUnifiedRows,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(unifiedRows, {
+    initialPageSize: 10,
+    pageSizeOptions: [5, 10, 20, 50],
+  });
+
   const handleSavePayment = async (sessionId: number) => {
     try {
       setSavingSessionId(sessionId);
@@ -363,7 +381,7 @@ export default function SessionRevenue() {
                   </tr>
                 </thead>
                 <tbody>
-                  {unifiedRows.map((row) => {
+                  {paginatedUnifiedRows.map((row) => {
                     const isPhysical = row.actionType === "physical";
                     const isSaving =
                       isPhysical &&
@@ -520,6 +538,17 @@ export default function SessionRevenue() {
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              pageSizeOptions={pageSizeOptions}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </section>
         )}
       </div>

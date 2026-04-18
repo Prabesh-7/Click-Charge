@@ -6,6 +6,8 @@ import {
   type ChargingRevenueSummary,
   type ChargingSessionItem,
 } from "@/api/managerApi";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { toast } from "sonner";
 
 const toLocalDateKey = (value: string) => {
@@ -129,6 +131,22 @@ export default function RevenueReports() {
     [completedInvoiceSessions],
   );
 
+  const {
+    paginatedItems: paginatedDailyRevenueRows,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(dailyRevenueRows, {
+    initialPageSize: 10,
+    pageSizeOptions: [5, 10, 20, 50],
+  });
+
   const handleDownloadRevenueReport = () => {
     if (dailyRevenueRows.length === 0) {
       toast.error("No daily revenue data available to export.");
@@ -247,7 +265,6 @@ export default function RevenueReports() {
         {!loading && (
           <section className="rounded-md border border-gray-200 bg-white p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            
               <button
                 type="button"
                 onClick={handleDownloadRevenueReport}
@@ -256,8 +273,6 @@ export default function RevenueReports() {
                 Generate Revenue Report
               </button>
             </div>
-
-          
           </section>
         )}
 
@@ -299,7 +314,7 @@ export default function RevenueReports() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dailyRevenueRows.map((row) => (
+                  {paginatedDailyRevenueRows.map((row) => (
                     <tr
                       key={row.dateKey}
                       className="border-b border-gray-200 hover:bg-gray-50"
@@ -324,6 +339,17 @@ export default function RevenueReports() {
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              pageSizeOptions={pageSizeOptions}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </section>
         )}
       </div>

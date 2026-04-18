@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import {
   Bath,
@@ -38,7 +37,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { useNavigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import { toast } from "sonner";
@@ -519,6 +520,23 @@ export default function FindStations() {
   ).length;
   const busyCount = stations.filter((s) => s.available_connectors === 0).length;
 
+  const {
+    paginatedItems: paginatedStations,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(sortedStations, {
+    initialPageSize: 9,
+    pageSizeOptions: [6, 9, 12, 24],
+    resetOnChange: [searchQuery, distanceFilter],
+  });
+
   return (
     <main className="min-h-screen bg-gray-50 font-sans">
       {/* Top nav bar */}
@@ -529,9 +547,8 @@ export default function FindStations() {
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
             <span className="text-sm font-bold tracking-tight text-gray-900">
-             Click&Charge
+              Click&Charge
             </span>
-      
           </div>
 
           <div className="flex items-center gap-2">
@@ -585,7 +602,6 @@ export default function FindStations() {
                   {busyCount} busy
                 </span>
               </div>
-         
             </div>
           )}
         </div>
@@ -684,7 +700,7 @@ export default function FindStations() {
           )}
 
           {!loading &&
-            sortedStations.map((station) => {
+            paginatedStations.map((station) => {
               const distance = stationDistances.get(station.station_id);
               const isAvailable = station.available_connectors > 0;
               const plugTypes = (station.charger_types ?? []).filter((p) =>
@@ -870,6 +886,21 @@ export default function FindStations() {
               );
             })}
         </div>
+        {!loading && sortedStations.length > 0 && (
+          <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              pageSizeOptions={pageSizeOptions}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </div>
 
       {/* Detail Dialog */}

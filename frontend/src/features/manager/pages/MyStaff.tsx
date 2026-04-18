@@ -8,6 +8,7 @@ import {
 } from "@/api/managerApi";
 import { Edit2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { useState as useFormState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +26,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { toast } from "sonner";
 
 export default function MyStaff() {
@@ -160,6 +162,22 @@ export default function MyStaff() {
     }
   };
 
+  const {
+    paginatedItems: paginatedStaffMembers,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(staffMembers, {
+    initialPageSize: 10,
+    pageSizeOptions: [5, 10, 20, 50],
+  });
+
   return (
     <main className="min-h-screen bg-white p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -212,56 +230,77 @@ export default function MyStaff() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-700">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">Name</th>
-                    <th className="px-4 py-3 text-left font-semibold">Email</th>
-                    <th className="px-4 py-3 text-left font-semibold">Phone</th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Joined
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {staffMembers.map((staff) => (
-                    <tr
-                      key={staff.user_id}
-                      className="border-t hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-3">{staff.user_name}</td>
-                      <td className="px-4 py-3">{staff.email}</td>
-                      <td className="px-4 py-3">{staff.phone_number || "-"}</td>
-                      <td className="px-4 py-3">
-                        {new Date(staff.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => handleEditClick(staff)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Edit staff"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(staff.user_id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Delete staff"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Name
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Email
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Phone
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Joined
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedStaffMembers.map((staff) => (
+                      <tr
+                        key={staff.user_id}
+                        className="border-t hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3">{staff.user_name}</td>
+                        <td className="px-4 py-3">{staff.email}</td>
+                        <td className="px-4 py-3">
+                          {staff.phone_number || "-"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {new Date(staff.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => handleEditClick(staff)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Edit staff"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(staff.user_id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Delete staff"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                startItem={startItem}
+                endItem={endItem}
+                pageSizeOptions={pageSizeOptions}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
           )}
         </div>
       )}

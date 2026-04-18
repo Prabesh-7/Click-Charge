@@ -3,6 +3,8 @@ import {
   getManagerChargingSessions,
   type ChargingSessionItem,
 } from "@/api/managerApi";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useClientPagination } from "@/hooks/useClientPagination";
 
 const formatSessionDate = (value: string) => {
   return new Date(value).toLocaleDateString(undefined, {
@@ -105,6 +107,22 @@ export default function ChargingSessions() {
     [todaySessions],
   );
 
+  const {
+    paginatedItems: paginatedTodaySessions,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(todaySessions, {
+    initialPageSize: 10,
+    pageSizeOptions: [5, 10, 20, 50],
+  });
+
   return (
     <main className="min-h-screen bg-white px-4 py-7 md:px-6 md:py-10">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -193,7 +211,7 @@ export default function ChargingSessions() {
                   </tr>
                 </thead>
                 <tbody>
-                  {todaySessions.map((session) => {
+                  {paginatedTodaySessions.map((session) => {
                     const isActive = !session.end_time;
 
                     return (
@@ -256,6 +274,17 @@ export default function ChargingSessions() {
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              startItem={startItem}
+              endItem={endItem}
+              pageSizeOptions={pageSizeOptions}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </section>
         )}
       </div>

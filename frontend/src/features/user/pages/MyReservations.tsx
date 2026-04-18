@@ -16,6 +16,8 @@ import {
   payPendingReservationAmount,
   type UserReservationItem,
 } from "@/api/userApi";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { toast } from "sonner";
 
 const formatDateTime = (value: string | null) => {
@@ -220,6 +222,23 @@ export default function MyReservations() {
     return { active, upcoming, completed };
   }, [currentDayReservations]);
 
+  const {
+    paginatedItems: paginatedReservations,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(visibleReservations, {
+    initialPageSize: 5,
+    pageSizeOptions: [5, 10, 20],
+    resetOnChange: [showPreviousReservations],
+  });
+
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-8 md:px-6 md:py-10">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -306,152 +325,166 @@ export default function MyReservations() {
                       : "No reservations found for today."}
                   </div>
                 ) : (
-                  <div className="grid gap-4">
-                    {visibleReservations.map((reservation) => (
-                      <article
-                        key={reservation.reservation_id}
-                        className="overflow-hidden rounded-xl border border-gray-200 bg-white"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 bg-gray-50 px-5 py-4">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {reservation.charger_name}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {reservation.station_name ||
-                                `Station ${reservation.station_id ?? "N/A"}`}
-                              <span className="mx-1">·</span>
-                              {reservation.charger_type}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${getStatusClasses(reservation.status)}`}
-                            >
-                              {reservation.status}
-                            </span>
-                            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] font-semibold text-gray-600">
-                              {getTypeLabel(reservation.reservation_type)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="grid gap-4 px-5 py-5 md:grid-cols-4">
-                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
-                              <MapPin size={14} />
-                              Location
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                    <div className="grid gap-4 p-4">
+                      {paginatedReservations.map((reservation) => (
+                        <article
+                          key={reservation.reservation_id}
+                          className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 bg-gray-50 px-5 py-4">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {reservation.charger_name}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {reservation.station_name ||
+                                  `Station ${reservation.station_id ?? "N/A"}`}
+                                <span className="mx-1">·</span>
+                                {reservation.charger_type}
+                              </p>
                             </div>
-                            <p className="mt-2 text-sm font-semibold text-gray-900">
-                              {reservation.station_name ||
-                                "Station not available"}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Charger {reservation.charger_id} · Connector{" "}
-                              {reservation.connector_number}
-                            </p>
-                          </div>
 
-                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
-                              <CalendarClock size={14} />
-                              Reserved At
-                            </div>
-                            <p className="mt-2 text-sm font-semibold text-gray-900">
-                              {formatDateTime(reservation.reserved_at)}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Reservation #{reservation.reservation_id}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
-                              <Clock3 size={14} />
-                              Time Window
-                            </div>
-                            <p className="mt-2 text-sm font-semibold text-gray-900">
-                              {formatTimeRange(
-                                reservation.start_time,
-                                reservation.end_time,
-                              )}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {formatShortDate(reservation.start_time)}
-                            </p>
-                          </div>
-
-                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
-                              <ShieldCheck size={14} />
-                              Connector
-                            </div>
-                            <p className="mt-2 text-sm font-semibold text-gray-900">
-                              {reservation.charge_point_id}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              Connector {reservation.connector_number} ·{" "}
-                              {reservation.connector_id}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4 text-xs text-gray-500">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <ReceiptText size={14} />
-                              <span>
-                                {reservation.reserved_by_user_name ||
-                                  "Reserved by you"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <PlugZap size={14} />
-                              <span>
-                                {reservation.reserved_by_email ||
-                                  "No email on file"}
-                              </span>
-                            </div>
-                            {(reservation.pending_payment_amount ?? 0) > 0 && (
-                              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                                Pending Amount: NPR{" "}
-                                {Number(
-                                  reservation.pending_payment_amount ?? 0,
-                                ).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-
-                          <div>
-                            {(reservation.pending_payment_amount ?? 0) > 0 ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void handlePayPending(
-                                    reservation.reservation_id,
-                                  )
-                                }
-                                disabled={
-                                  payingReservationId ===
-                                  reservation.reservation_id
-                                }
-                                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${getStatusClasses(reservation.status)}`}
                               >
-                                {payingReservationId ===
-                                reservation.reservation_id
-                                  ? "Paying..."
-                                  : "Pay From Wallet"}
-                              </button>
-                            ) : (
-                              <span className="text-[11px] text-gray-400">
-                                No pending payment
+                                {reservation.status}
                               </span>
-                            )}
+                              <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] font-semibold text-gray-600">
+                                {getTypeLabel(reservation.reservation_type)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </article>
-                    ))}
+
+                          <div className="grid gap-4 px-5 py-5 md:grid-cols-4">
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                                <MapPin size={14} />
+                                Location
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-gray-900">
+                                {reservation.station_name ||
+                                  "Station not available"}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Charger {reservation.charger_id} · Connector{" "}
+                                {reservation.connector_number}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                                <CalendarClock size={14} />
+                                Reserved At
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-gray-900">
+                                {formatDateTime(reservation.reserved_at)}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Reservation #{reservation.reservation_id}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                                <Clock3 size={14} />
+                                Time Window
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-gray-900">
+                                {formatTimeRange(
+                                  reservation.start_time,
+                                  reservation.end_time,
+                                )}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {formatShortDate(reservation.start_time)}
+                              </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                                <ShieldCheck size={14} />
+                                Connector
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-gray-900">
+                                {reservation.charge_point_id}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Connector {reservation.connector_number} ·{" "}
+                                {reservation.connector_id}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-4 text-xs text-gray-500">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <ReceiptText size={14} />
+                                <span>
+                                  {reservation.reserved_by_user_name ||
+                                    "Reserved by you"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <PlugZap size={14} />
+                                <span>
+                                  {reservation.reserved_by_email ||
+                                    "No email on file"}
+                                </span>
+                              </div>
+                              {(reservation.pending_payment_amount ?? 0) >
+                                0 && (
+                                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                  Pending Amount: NPR{" "}
+                                  {Number(
+                                    reservation.pending_payment_amount ?? 0,
+                                  ).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div>
+                              {(reservation.pending_payment_amount ?? 0) > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handlePayPending(
+                                      reservation.reservation_id,
+                                    )
+                                  }
+                                  disabled={
+                                    payingReservationId ===
+                                    reservation.reservation_id
+                                  }
+                                  className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {payingReservationId ===
+                                  reservation.reservation_id
+                                    ? "Paying..."
+                                    : "Pay From Wallet"}
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-gray-400">
+                                  No pending payment
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                    <PaginationControls
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      startItem={startItem}
+                      endItem={endItem}
+                      pageSizeOptions={pageSizeOptions}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={setPageSize}
+                    />
                   </div>
                 )}
               </div>

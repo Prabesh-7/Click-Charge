@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getStations, updateStation, deleteStation } from "@/api/adminApi";
 import { Button } from "@/components/ui/button";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import CreateManagerStationForm from "@/features/admin/components/CreateManagerStationForm";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import {
   stationUpdateSchema,
   type StationUpdateFormValues,
@@ -150,6 +152,22 @@ export default function ViewStations() {
     }
   };
 
+  const {
+    paginatedItems: paginatedStations,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(stations, {
+    initialPageSize: 10,
+    pageSizeOptions: [5, 10, 20, 50],
+  });
+
   return (
     <main className="p-6">
       <div className="mb-6 flex items-start justify-between gap-4">
@@ -199,95 +217,108 @@ export default function ViewStations() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-700">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">ID</th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Station
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Address
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Chargers
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Manager
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Location
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold">
-                      Created
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stations.map((station) => (
-                    <tr
-                      key={station.station_id}
-                      className="border-t hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        #{station.station_id}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">
-                          {station.station_name}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {station.address}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900">
-                        {station.total_charger}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {station.manager_id
-                          ? `#${station.manager_id}`
-                          : "Not assigned"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {station.latitude.toFixed(4)},{" "}
-                        {station.longitude.toFixed(4)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {new Date(station.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center gap-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditClick(station)}
-                            className="h-8 px-3 text-blue-600"
-                          >
-                            <Edit2 size={16} />
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(station.station_id)}
-                            className="h-8 px-3 text-red-500"
-                          >
-                            <Trash2 size={16} />
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">ID</th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Station
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Address
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Chargers
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Manager
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Location
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold">
+                        Created
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedStations.map((station) => (
+                      <tr
+                        key={station.station_id}
+                        className="border-t hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3 font-medium text-gray-900">
+                          #{station.station_id}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900">
+                            {station.station_name}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {station.address}
+                        </td>
+                        <td className="px-4 py-3 text-gray-900">
+                          {station.total_charger}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {station.manager_id
+                            ? `#${station.manager_id}`
+                            : "Not assigned"}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {station.latitude.toFixed(4)},{" "}
+                          {station.longitude.toFixed(4)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {new Date(station.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditClick(station)}
+                              className="h-8 px-3 text-blue-600"
+                            >
+                              <Edit2 size={16} />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(station.station_id)}
+                              className="h-8 px-3 text-red-500"
+                            >
+                              <Trash2 size={16} />
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                startItem={startItem}
+                endItem={endItem}
+                pageSizeOptions={pageSizeOptions}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
           )}
         </div>
       )}

@@ -5,6 +5,8 @@ import {
   type ManagerStationReview,
   type ManagerStationReviewSummary,
 } from "@/api/managerApi";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { useClientPagination } from "@/hooks/useClientPagination";
 import { MessageSquare, Search, Star } from "lucide-react";
 
 export default function StationReviews() {
@@ -57,6 +59,23 @@ export default function StationReviews() {
       );
     });
   }, [reviews, query]);
+
+  const {
+    paginatedItems: paginatedReviews,
+    currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    pageSizeOptions,
+    setCurrentPage,
+    setPageSize,
+  } = useClientPagination(filteredReviews, {
+    initialPageSize: 5,
+    pageSizeOptions: [5, 10, 20],
+    resetOnChange: [query],
+  });
 
   return (
     <main className="min-h-screen bg-white p-6">
@@ -122,39 +141,52 @@ export default function StationReviews() {
               No reviews found.
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredReviews.map((review) => (
-                <article
-                  key={review.review_id}
-                  className="rounded-md border border-gray-200 bg-white p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {review.user_name || "User"}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {review.user_email || "Email not available"}
-                      </p>
+            <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
+              <div className="space-y-4 p-4">
+                {paginatedReviews.map((review) => (
+                  <article
+                    key={review.review_id}
+                    className="rounded-md border border-gray-200 bg-white p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {review.user_name || "User"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {review.user_email || "Email not available"}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                        <Star
+                          size={13}
+                          className="fill-amber-400 text-amber-500"
+                        />
+                        {review.rating}/5
+                      </span>
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                      <Star
-                        size={13}
-                        className="fill-amber-400 text-amber-500"
-                      />
-                      {review.rating}/5
-                    </span>
-                  </div>
 
-                  <p className="mt-3 text-sm text-gray-700">
-                    {review.review_text || "No written feedback."}
-                  </p>
+                    <p className="mt-3 text-sm text-gray-700">
+                      {review.review_text || "No written feedback."}
+                    </p>
 
-                  <p className="mt-2 text-xs text-gray-500">
-                    Updated {new Date(review.updated_at).toLocaleString()}
-                  </p>
-                </article>
-              ))}
+                    <p className="mt-2 text-xs text-gray-500">
+                      Updated {new Date(review.updated_at).toLocaleString()}
+                    </p>
+                  </article>
+                ))}
+              </div>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                startItem={startItem}
+                endItem={endItem}
+                pageSizeOptions={pageSizeOptions}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
             </div>
           )}
         </div>
