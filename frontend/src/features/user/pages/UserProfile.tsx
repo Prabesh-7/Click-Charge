@@ -12,6 +12,8 @@ import {
   Phone,
   ShieldCheck,
   Wallet,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 import { getWalletSummary } from "@/api/walletApi";
@@ -24,9 +26,7 @@ import { toast } from "sonner";
 
 const formatDate = (value: string) => {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Not available";
-  }
+  if (Number.isNaN(date.getTime())) return "Not available";
   return date.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "short",
@@ -35,9 +35,7 @@ const formatDate = (value: string) => {
 };
 
 const formatRole = (role: string) => {
-  if (!role) {
-    return "User";
-  }
+  if (!role) return "User";
   return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
 };
 
@@ -85,25 +83,18 @@ export default function UserProfilePage() {
   }, []);
 
   const accountHealth = useMemo(() => {
-    if (!profile) {
-      return 0;
-    }
-
+    if (!profile) return 0;
     const checks = [
       Boolean(profile.user_name),
       Boolean(profile.email),
       Boolean(profile.phone_number),
       Boolean(profile.vehicle),
     ];
-
-    const completed = checks.filter(Boolean).length;
-    return Math.round((completed / checks.length) * 100);
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [profile]);
 
   const handleEditCancel = () => {
-    if (!profile) {
-      return;
-    }
+    if (!profile) return;
     setFormData({
       user_name: profile.user_name ?? "",
       email: profile.email ?? "",
@@ -122,7 +113,6 @@ export default function UserProfilePage() {
       toast.error(message);
       return;
     }
-
     if (!formData.email.trim()) {
       const message = "Email is required.";
       setError(message);
@@ -164,272 +154,206 @@ export default function UserProfilePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e2f4e9_0%,#f8fafc_38%,#f8fafc_100%)] px-4 py-6 md:px-8 md:py-10">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-[linear-gradient(120deg,#0f172a,#134e4a)] px-6 py-7 text-white md:px-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-emerald-200">
-                  Account Center
-                </p>
-                <h1 className="mt-2 text-3xl font-bold">My Profile</h1>
-                <p className="mt-2 max-w-xl text-sm text-slate-200">
-                  Keep your account details up to date. This page is designed to
-                  be clear and simple for everyday use.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate("/user/wallet")}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:bg-emerald-400"
-              >
-                <CreditCard size={16} />
-                Manage Wallet
-              </button>
-            </div>
-          </div>
+    <main className="min-h-screen bg-gray-50 px-4 py-8 md:px-6 md:py-10">
+      <div className="mx-auto max-w-4xl space-y-6">
 
-          <div className="grid gap-4 border-t border-slate-200 bg-white px-6 py-5 md:grid-cols-3 md:px-8">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Wallet Balance
-              </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                Rs {walletBalance === null ? "0.00" : walletBalance.toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Profile Completeness
-              </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {accountHealth}%
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Access Role
-              </p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">
-                {profile ? formatRole(profile.role) : "User"}
-              </p>
-            </div>
-          </div>
-        </section>
+        {/* Page title */}
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Manage your personal details and account settings.
+          </p>
+        </div>
 
+        {/* Alerts */}
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+          <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <AlertCircle size={14} className="shrink-0" />
+            <p className="flex-1">{error}</p>
+            <button type="button" onClick={() => setError(null)} className="shrink-0 text-red-400 hover:text-red-600">
+              <X size={14} />
+            </button>
           </div>
         )}
 
         {saveMessage && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {saveMessage}
+          <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <CheckCircle2 size={14} className="shrink-0" />
+            <p className="flex-1">{saveMessage}</p>
+            <button type="button" onClick={() => setSaveMessage(null)} className="shrink-0 text-emerald-400 hover:text-emerald-600">
+              <X size={14} />
+            </button>
           </div>
         )}
 
-        <section className="grid gap-4 md:grid-cols-2">
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Personal Details
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Contact information used for bookings and account
-                  communication.
-                </p>
-              </div>
-
-              {!isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(true);
-                    setSaveMessage(null);
-                    setError(null);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  <Pencil size={14} />
-                  Edit
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleEditCancel}
-                    className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <X size={14} />
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleProfileSave()}
-                    disabled={saving}
-                    className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Save size={14} />
-                    {saving ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              )}
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="grid gap-5 md:grid-cols-[1fr_300px]">
+            <div className="h-96 animate-pulse rounded-xl border border-gray-100 bg-white" />
+            <div className="space-y-4">
+              <div className="h-44 animate-pulse rounded-xl border border-gray-100 bg-white" />
+              <div className="h-28 animate-pulse rounded-xl border border-gray-100 bg-white" />
+              <div className="h-20 animate-pulse rounded-xl border border-gray-100 bg-white" />
             </div>
+          </div>
+        )}
 
-            <div className="mt-5 space-y-3">
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <CircleUserRound className="h-5 w-5 text-slate-500" />
-                <div className="w-full">
-                  <p className="text-xs text-slate-500">Full Name</p>
-                  {isEditing ? (
-                    <input
-                      value={formData.user_name}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          user_name: e.target.value,
-                        }))
-                      }
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-                    />
-                  ) : (
-                    <p className="font-medium text-slate-900">
-                      {loading
-                        ? "Loading..."
-                        : profile?.user_name || "Not available"}
-                    </p>
-                  )}
-                </div>
-              </div>
+        {!loading && profile && (
+          <div className="grid gap-5 md:grid-cols-[1fr_300px]">
 
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <Mail className="h-5 w-5 text-slate-500" />
-                <div className="w-full">
-                  <p className="text-xs text-slate-500">Email Address</p>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-                    />
-                  ) : (
-                    <p className="font-medium text-slate-900">
-                      {loading
-                        ? "Loading..."
-                        : profile?.email || "Not available"}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <Phone className="h-5 w-5 text-slate-500" />
-                <div className="w-full">
-                  <p className="text-xs text-slate-500">Phone Number</p>
-                  {isEditing ? (
-                    <input
-                      value={formData.phone_number}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          phone_number: e.target.value,
-                        }))
-                      }
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-                    />
-                  ) : (
-                    <p className="font-medium text-slate-900">
-                      {loading
-                        ? "Loading..."
-                        : profile?.phone_number || "Not available"}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <Car className="h-5 w-5 text-slate-500" />
-                <div className="w-full">
-                  <p className="text-xs text-slate-500">Vehicle</p>
-                  {isEditing ? (
-                    <input
-                      value={formData.vehicle}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          vehicle: e.target.value,
-                        }))
-                      }
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
-                    />
-                  ) : (
-                    <p className="font-medium text-slate-900">
-                      {loading
-                        ? "Loading..."
-                        : profile?.vehicle || "Not added yet"}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Account Summary
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Account timeline and status for trust and transparency.
-            </p>
-
-            <div className="mt-5 space-y-3">
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            {/* Left: Personal details */}
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
                 <div>
-                  <p className="text-xs text-slate-500">Account Status</p>
-                  <p className="font-medium text-slate-900">Active</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <CalendarDays className="h-5 w-5 text-slate-500" />
-                <div>
-                  <p className="text-xs text-slate-500">Member Since</p>
-                  <p className="font-medium text-slate-900">
-                    {loading || !profile
-                      ? "Loading..."
-                      : formatDate(profile.created_at)}
+                  <h2 className="text-sm font-semibold text-gray-900">Personal Details</h2>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    Contact info for bookings and account communication.
                   </p>
                 </div>
+                {!isEditing ? (
+                  <button
+                    type="button"
+                    onClick={() => { setIsEditing(true); setSaveMessage(null); setError(null); }}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 active:scale-[0.98]"
+                  >
+                    <Pencil size={12} />
+                    Edit
+                  </button>
+                ) : (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleEditCancel}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 active:scale-[0.98]"
+                    >
+                      <X size={12} />
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleProfileSave()}
+                      disabled={saving}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Save size={12} />
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3">
-                <Wallet className="h-5 w-5 text-slate-500" />
-                <div>
-                  <p className="text-xs text-slate-500">Available Wallet</p>
-                  <p className="font-medium text-slate-900">
-                    Rs{" "}
-                    {walletBalance === null ? "0.00" : walletBalance.toFixed(2)}
-                  </p>
+              <div className="divide-y divide-gray-100">
+                {(
+                  [
+                    { icon: CircleUserRound, label: "Full Name",     field: "user_name"    as const, type: "text",  placeholder: "Your full name" },
+                    { icon: Mail,            label: "Email Address", field: "email"         as const, type: "email", placeholder: "you@example.com" },
+                    { icon: Phone,           label: "Phone Number",  field: "phone_number"  as const, type: "tel",   placeholder: "+977-9800000000" },
+                    { icon: Car,             label: "Vehicle",       field: "vehicle"       as const, type: "text",  placeholder: "e.g. Tesla Model 3" },
+                  ] as const
+                ).map(({ icon: Icon, label, field, type, placeholder }) => (
+                  <div key={field} className="flex items-start gap-3 px-5 py-4">
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-gray-50">
+                      <Icon size={13} className="text-gray-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{label}</p>
+                      {isEditing ? (
+                        <input
+                          type={type}
+                          value={formData[field]}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, [field]: e.target.value }))
+                          }
+                          placeholder={placeholder}
+                          className="mt-1.5 h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-500/20"
+                        />
+                      ) : (
+                        <p className="mt-0.5 text-sm font-medium text-gray-900">
+                          {formData[field] || (
+                            <span className="font-normal text-gray-400">Not set</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div className="space-y-4">
+
+              {/* Account summary */}
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div className="border-b border-gray-100 px-4 py-3.5">
+                  <h2 className="text-sm font-semibold text-gray-900">Account</h2>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <ShieldCheck size={14} className="shrink-0 text-emerald-500" />
+                    <div>
+                      <p className="text-[11px] text-gray-400">Status</p>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <span className="text-sm font-medium text-gray-900">Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <CircleUserRound size={14} className="shrink-0 text-gray-400" />
+                    <div>
+                      <p className="text-[11px] text-gray-400">Role</p>
+                      <p className="mt-0.5 text-sm font-medium text-gray-900">{formatRole(profile.role)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <CalendarDays size={14} className="shrink-0 text-gray-400" />
+                    <div>
+                      <p className="text-[11px] text-gray-400">Member since</p>
+                      <p className="mt-0.5 text-sm font-medium text-gray-900">{formatDate(profile.created_at)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-              Your account details are securely managed. If any information is
-              missing, contact support to update it.
+              {/* Wallet */}
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div className="border-b border-gray-100 px-4 py-3.5">
+                  <h2 className="text-sm font-semibold text-gray-900">Wallet</h2>
+                </div>
+                <div className="px-4 py-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <Wallet size={14} className="text-gray-400" />
+                      <div>
+                        <p className="text-[11px] text-gray-400">Balance</p>
+                        <p className="mt-0.5 text-base font-bold text-gray-900">
+                          Rs {walletBalance === null ? "—" : walletBalance.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/user/wallet")}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98]"
+                    >
+                      <CreditCard size={12} />
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+         
+
+              <div className="flex flex-wrap gap-2"> <button type="button" onClick={() => navigate("/user/reservations")} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50" > My Reservations </button> </div>
+              
+
             </div>
-          </article>
-        </section>
+          </div>
+        )}
       </div>
     </main>
   );

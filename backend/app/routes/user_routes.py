@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.schemas.charger import ChargerControlResponse
+from app.schemas.reservation import ReservationOut
 from app.schemas.station_review import StationReviewCreate, StationReviewOut, StationReviewSummaryOut
 from app.schemas.slot import SlotOut
 from app.schemas.user_station import UserStationOut
 from app.schemas.userValidation import UserOut, UserProfileUpdate
+from app.services.reservation_service import get_reservations_by_user
 from app.services.user_service import get_available_stations_for_user, update_user_profile
 from app.services.station_review_service import (
     upsert_station_review,
@@ -88,6 +90,14 @@ async def cancel_reservation(
     db: AsyncSession = Depends(get_db),
 ):
     return await cancel_user_reservation(charger_id, connector_id, current_user, db)
+
+
+@router.get("/reservations", response_model=list[ReservationOut])
+async def get_my_reservations(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_reservations_by_user(current_user, db)
 
 
 @router.get("/stations/{station_id}/slots", response_model=list[SlotOut])

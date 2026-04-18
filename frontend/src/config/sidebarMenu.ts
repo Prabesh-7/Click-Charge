@@ -43,6 +43,12 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
       section: "Explore",
     },
     {
+      label: "My Reservations",
+      path: "/user/reservations",
+      icon: ReceiptText,
+      section: "Explore",
+    },
+    {
       label: "Wallet",
       path: "/user/wallet",
       icon: Wallet,
@@ -69,12 +75,7 @@ const sidebarMenu: Record<Role, MenuItem[]> = {
       icon: Building2,
       section: "Management",
     },
-    {
-      label: "Add Stations",
-      path: "/admin/addStation",
-      icon: Sparkles,
-      section: "Management",
-    },
+ 
   ],
 
   staff: [

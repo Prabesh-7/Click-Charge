@@ -80,6 +80,28 @@ export interface StationSlot {
   updated_at: string;
 }
 
+export interface UserReservationItem {
+  reservation_id: number;
+  reservation_type: "SLOT" | "CONNECTOR";
+  status: "ACTIVE" | "CANCELLED" | "RELEASED" | "EXPIRED" | "COMPLETED";
+  station_id: number | null;
+  station_name: string | null;
+  charger_id: number;
+  charger_name: string;
+  charger_type: string;
+  connector_id: number;
+  connector_number: number;
+  charge_point_id: string;
+  slot_id: number | null;
+  start_time: string | null;
+  end_time: string | null;
+  reserved_at: string | null;
+  reserved_by_user_id: number | null;
+  reserved_by_user_name: string | null;
+  reserved_by_email: string | null;
+  reserved_by_phone_number: string | null;
+}
+
 export interface UserProfile {
   user_id: number;
   user_name: string;
@@ -192,4 +214,12 @@ export const cancelConnectorReservationByUser = async (chargerId: number, connec
   );
 
   return response.data;
+};
+
+export const getUserReservations = async (): Promise<UserReservationItem[]> => {
+  const { data } = await api.get<UserReservationItem[]>("/user/reservations", {
+    headers: authHeader(),
+  });
+
+  return data;
 };

@@ -8,7 +8,7 @@ import ResetPassword from "@/features/auth/pages/ResetPassword";
 import ManagerDashboard from "@/features/manager/pages/ManagerDashboard";
 
 import FindStations from "@/features/user/pages/FindStations";
-import StationAvailability from "@/features/user/pages/StationAvailability";
+import StationAvailability from "../features/user/pages/StationAvailability";
 import StationSlots from "@/features/user/pages/StationSlots";
 import UserStationDetails from "@/features/user/pages/StationDetails";
 import WalletDashboard from "@/features/user/pages/WalletDashboard";
@@ -16,6 +16,7 @@ import EsewaPaymentPage from "@/features/user/pages/EsewaPaymentPage";
 import PaymentSuccess from "@/features/user/pages/PaymentSuccess";
 import PaymentFailure from "@/features/user/pages/PaymentFailure";
 import UserProfilePage from "@/features/user/pages/UserProfile";
+import MyReservations from "@/features/user/pages/MyReservations";
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 
 import AddStations from "@/features/admin/pages/AddStations";
@@ -61,6 +62,7 @@ export default function AppRoutes() {
           element={<StationAvailability />}
         />
         <Route path="stations/:stationId/slots" element={<StationSlots />} />
+        <Route path="reservations" element={<MyReservations />} />
         <Route path="profile" element={<UserProfilePage />} />
         <Route path="wallet" element={<WalletDashboard />} />
         <Route path="wallet/add-funds/esewa" element={<EsewaPaymentPage />} />

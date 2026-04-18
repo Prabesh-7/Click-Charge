@@ -8,6 +8,7 @@ import {
   Plug,
   Battery,
   AlertCircle,
+  Clock3,
 } from "lucide-react";
 import {
   getUserStations,
@@ -37,6 +38,32 @@ export default function StationAvailability() {
       stations.find((station) => station.station_id === parsedStationId) || null
     );
   }, [stationId, stations]);
+
+  const stationStats = useMemo(() => {
+    if (!selectedStation) {
+      return {
+        availableConnectors: 0,
+        reservedConnectors: 0,
+        chargingConnectors: 0,
+      };
+    }
+
+    const connectors = selectedStation.chargers.flatMap(
+      (charger) => charger.connectors || [],
+    );
+
+    return {
+      availableConnectors: connectors.filter(
+        (connector) => connector.status === "AVAILABLE",
+      ).length,
+      reservedConnectors: connectors.filter(
+        (connector) => connector.status === "RESERVED",
+      ).length,
+      chargingConnectors: connectors.filter(
+        (connector) => connector.status === "IN_CHARGING",
+      ).length,
+    };
+  }, [selectedStation]);
 
   const fetchStations = async (isInitialLoad = false) => {
     try {
@@ -96,20 +123,18 @@ export default function StationAvailability() {
     return () => window.clearInterval(slotInterval);
   }, [selectedStation]);
 
-  const reservedSlotTimesByConnector = useMemo(() => {
-    const now = Date.now();
-    const map = new Map<number, Array<{ start: string; end: string }>>();
+  const slotsByConnector = useMemo(() => {
+    const map = new Map<
+      number,
+      Array<{ start: string; end: string; status: string }>
+    >();
 
     stationSlots.forEach((slot) => {
-      if (slot.status !== "RESERVED") return;
-
-      const endMs = new Date(slot.end_time).getTime();
-      if (endMs <= now) return;
-
       const list = map.get(slot.connector_id) || [];
       list.push({
         start: slot.start_time,
         end: slot.end_time,
+        status: slot.status,
       });
       map.set(slot.connector_id, list);
     });
@@ -126,12 +151,15 @@ export default function StationAvailability() {
 
   const formatReservationWindow = (start: string, end: string) => {
     const formatFriendlyTime = (d: Date) => {
-      return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+      return d.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     };
 
     const startDate = new Date(start);
     const endDate = new Date(end);
-    return `${formatFriendlyTime(startDate)} to ${formatFriendlyTime(endDate)}`;
+    return `${formatFriendlyTime(startDate)} - ${formatFriendlyTime(endDate)}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -173,13 +201,25 @@ export default function StationAvailability() {
     }
   };
 
+  const getSlotBadgeClasses = (status: string) => {
+    switch (status) {
+      case "OPEN":
+        return "border-emerald-200 text-emerald-700 bg-white";
+      case "RESERVED":
+        return "border-amber-200 text-amber-700 bg-white";
+      case "CLOSED":
+        return "border-slate-200 text-slate-600 bg-white";
+      default:
+        return "border-gray-200 text-gray-600 bg-white";
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-7 md:px-6 md:py-10">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e8f7ee_0%,#f8fafc_42%,#f8fafc_100%)] px-4 py-7 md:px-6 md:py-10">
       <div className="mx-auto max-w-4xl">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <div>
-            <div className="inline-flex items-center gap-2 mb-2">
+            <div className="mb-2 inline-flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => navigate("/user/stations")}
@@ -191,10 +231,10 @@ export default function StationAvailability() {
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">
               Available Chargers
             </h1>
+           
           </div>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span className="mt-0.5 shrink-0">⚠</span>
@@ -202,19 +242,17 @@ export default function StationAvailability() {
           </div>
         )}
 
-        {/* Loading */}
         {loading && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-24 rounded-xl border border-gray-200 bg-white animate-pulse"
+                className="h-24 animate-pulse rounded-xl border border-gray-200 bg-white"
               />
             ))}
           </div>
         )}
 
-        {/* Station Not Found */}
         {!loading && !error && !selectedStation && (
           <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-16 text-center">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
@@ -224,16 +262,14 @@ export default function StationAvailability() {
               Station not found
             </p>
             <p className="mt-1 max-w-xs text-sm text-gray-500">
-              The station you're looking for doesn't exist. Please go back and
+              The station you are looking for does not exist. Please go back and
               try again.
             </p>
           </div>
         )}
 
-        {/* Station Content */}
         {!loading && !error && selectedStation && (
           <div className="space-y-6">
-            {/* Station Header Card */}
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               <div className="p-5">
                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -253,7 +289,7 @@ export default function StationAvailability() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-1">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-gray-500">
                       Chargers
                     </p>
                     <p className="text-2xl font-bold text-gray-900">
@@ -264,19 +300,11 @@ export default function StationAvailability() {
                     </p>
                   </div>
                 </div>
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
-                    Total Connectors
-                  </p>
-                  <div className="inline-flex items-center gap-1.5 rounded-lg bg-[#22C55E]/10 px-3 py-1.5 text-sm font-bold text-[#22C55E]">
-                    {selectedStation.available_connectors}/
-                    {selectedStation.total_connectors} Available
-                  </div>
-                </div>
+          
               </div>
             </div>
 
-            {/* Chargers Grid */}
+       
             {selectedStation.chargers && selectedStation.chargers.length > 0 ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -331,8 +359,8 @@ export default function StationAvailability() {
                           <div className="space-y-2 p-4">
                             {(charger.connectors || []).map(
                               (connector: UserStationConnector) => {
-                                const reservationWindows =
-                                  reservedSlotTimesByConnector.get(
+                                const connectorSlots =
+                                  slotsByConnector.get(
                                     connector.connector_id,
                                   ) || [];
 
@@ -367,28 +395,33 @@ export default function StationAvailability() {
                                             `/user/stations/${selectedStation.station_id}/slots?connector=${connector.connector_id}`,
                                           );
                                         }}
-                                        className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
+                                        className="shrink-0 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
                                       >
                                         View Slot
                                       </button>
                                     </div>
 
-                                    {reservationWindows.length > 0 && (
-                                      <div className="mt-2 space-y-1 pl-10">
-                                        {reservationWindows.map(
-                                          (window, index) => (
-                                            <p
-                                              key={`${connector.connector_id}-${window.start}-${index}`}
-                                              className="text-xs text-amber-700"
-                                            >
-                                              Reserved from{" "}
-                                              {formatReservationWindow(
-                                                window.start,
-                                                window.end,
-                                              )}
-                                            </p>
-                                          ),
-                                        )}
+                                    {connectorSlots.length > 0 && (
+                                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5 pl-10">
+                                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                                          All Slots
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {connectorSlots.map(
+                                            (slotItem, index) => (
+                                              <span
+                                                key={`${connector.connector_id}-${slotItem.start}-${index}`}
+                                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold ${getSlotBadgeClasses(slotItem.status)}`}
+                                              >
+                                                <Clock3 size={11} />
+                                                {formatReservationWindow(
+                                                  slotItem.start,
+                                                  slotItem.end,
+                                                )}
+                                              </span>
+                                            ),
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -411,7 +444,7 @@ export default function StationAvailability() {
                   No chargers available
                 </p>
                 <p className="mt-1 max-w-xs text-sm text-gray-500">
-                  This station doesn't have any chargers configured yet.
+                  This station does not have any chargers configured yet.
                 </p>
               </div>
             )}
