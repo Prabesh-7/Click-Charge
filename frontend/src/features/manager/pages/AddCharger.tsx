@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addCharger } from "@/api/managerApi";
 import { z } from "zod";
+import { toast } from "sonner";
 
 type CreateChargerFormValues = z.input<typeof createChargerSchema>;
 type CreateChargerSubmitValues = z.output<typeof createChargerSchema>;
@@ -33,7 +34,7 @@ export default function AddCharger() {
     try {
       const res = await addCharger(data);
       console.log("Charger created:", res);
-      alert("Charger added successfully!");
+      toast.success("Charger added successfully.");
     } catch (error: any) {
       console.error(
         "Failed to add charger:",
@@ -41,11 +42,11 @@ export default function AddCharger() {
       );
       const detail = error.response?.data?.detail;
       if (typeof detail === "string") {
-        alert(detail);
+        toast.error("Failed to add charger", { description: detail });
       } else if (Array.isArray(detail) && detail[0]?.msg) {
-        alert(detail[0].msg);
+        toast.error("Failed to add charger", { description: detail[0].msg });
       } else {
-        alert("Failed to add charger. Please try again.");
+        toast.error("Failed to add charger. Please try again.");
       }
     }
   };

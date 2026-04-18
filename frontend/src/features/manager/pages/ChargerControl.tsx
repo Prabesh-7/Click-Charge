@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getMyChargers, startCharging } from "@/api/managerApi";
 import { BatteryCharging, Plug, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type Charger = {
   charger_id: number;
@@ -146,7 +147,9 @@ export default function ChargerControl() {
         },
       });
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to start charging.");
+      toast.error("Failed to start charging.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setActionLoading(false);
     }

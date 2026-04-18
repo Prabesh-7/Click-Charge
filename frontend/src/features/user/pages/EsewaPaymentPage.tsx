@@ -7,6 +7,7 @@ import {
   initiateEsewaTopup,
   type EsewaInitResponse,
 } from "@/api/walletApi";
+import { toast } from "sonner";
 
 export default function EsewaPaymentPage() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ export default function EsewaPaymentPage() {
 
         if (statusCode === 503) {
           setVerificationInfo(detail);
+          toast.warning(detail);
           return;
         }
 
@@ -76,9 +78,10 @@ export default function EsewaPaymentPage() {
         setPayload(data);
         setError(null);
       } catch (err: any) {
-        setError(
-          err.response?.data?.detail || "Unable to initialize eSewa payment.",
-        );
+        const message =
+          err.response?.data?.detail || "Unable to initialize eSewa payment.";
+        setError(message);
+        toast.error(message);
       } finally {
         setLoading(false);
       }

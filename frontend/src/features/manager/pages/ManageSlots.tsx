@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyChargers, createManagerSlot } from "@/api/managerApi";
+import { toast } from "sonner";
 
 interface ChargerCard {
   charger_id: number;
@@ -107,7 +108,9 @@ export default function ManageSlots() {
 
   const applyDuration = (minutes: number) => {
     if (!startTime) {
-      setError("Select a start time first.");
+      const message = "Select a start time first.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -116,7 +119,9 @@ export default function ManageSlots() {
     const end = new Date(start.getTime() + minutes * 60000);
 
     if (end.getDate() !== start.getDate()) {
-      setError("End time must stay within today.");
+      const message = "End time must stay within today.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -127,7 +132,9 @@ export default function ManageSlots() {
 
   const handleCreateSlot = async (connectorId: number) => {
     if (!startTime || !endTime) {
-      setError("Please provide start and end time.");
+      const message = "Please provide start and end time.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -139,12 +146,16 @@ export default function ManageSlots() {
     );
 
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      setError("Please provide valid start and end time.");
+      const message = "Please provide valid start and end time.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
     if (start <= now) {
-      setError("Start time must be in the future.");
+      const message = "Start time must be in the future.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -152,9 +163,9 @@ export default function ManageSlots() {
       durationMinutes < MIN_DURATION_MINUTES ||
       durationMinutes > MAX_DURATION_MINUTES
     ) {
-      setError(
-        `Slot duration must be between ${MIN_DURATION_MINUTES} and ${MAX_DURATION_MINUTES} minutes.`,
-      );
+      const message = `Slot duration must be between ${MIN_DURATION_MINUTES} and ${MAX_DURATION_MINUTES} minutes.`;
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -167,9 +178,13 @@ export default function ManageSlots() {
         start_time: toUtcIsoFromTodayTime(startTime),
         end_time: toUtcIsoFromTodayTime(endTime),
       });
-      setSuccess("Slot created successfully.");
+      const message = "Slot created successfully.";
+      setSuccess(message);
+      toast.success(message);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to create slot.");
+      const message = err.response?.data?.detail || "Failed to create slot.";
+      setError(message);
+      toast.error(message);
     } finally {
       setActionLoading(false);
     }
@@ -177,7 +192,9 @@ export default function ManageSlots() {
 
   const handleCreateSelectedSlot = async () => {
     if (selectedConnectorId === null) {
-      setError("Select a connector first.");
+      const message = "Select a connector first.";
+      setError(message);
+      toast.error(message);
       return;
     }
 

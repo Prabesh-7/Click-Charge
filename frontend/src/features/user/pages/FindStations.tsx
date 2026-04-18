@@ -1135,6 +1135,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
+import { toast } from "sonner";
 
 type Coordinates = {
   latitude: number;
@@ -1416,7 +1417,9 @@ export default function FindStations() {
   const submitReview = async () => {
     if (!selectedStation) return;
     if (reviewRating < 1 || reviewRating > 5) {
-      setError("Please select a rating between 1 and 5 stars.");
+      const message = "Please select a rating between 1 and 5 stars.";
+      setError(message);
+      toast.error(message);
       return;
     }
     try {
@@ -1433,8 +1436,11 @@ export default function FindStations() {
       );
       if (refreshedSelected) setSelectedStation(refreshedSelected);
       await loadStationReviews(selectedStation.station_id);
+      toast.success("Review submitted successfully.");
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Failed to submit review.");
+      const message = err?.response?.data?.detail || "Failed to submit review.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmittingReview(false);
     }
@@ -1493,7 +1499,12 @@ export default function FindStations() {
       try {
         await ensureUserLocation();
       } catch (locationError: unknown) {
-        setError(toErrorMessage(locationError, "Unable to get your location."));
+        const message = toErrorMessage(
+          locationError,
+          "Unable to get your location.",
+        );
+        setError(message);
+        toast.error(message);
       }
     })();
   };
@@ -1520,7 +1531,12 @@ export default function FindStations() {
         await ensureUserLocation();
         setDistanceFilter(nextFilter);
       } catch (locationError: unknown) {
-        setError(toErrorMessage(locationError, "Unable to get your location."));
+        const message = toErrorMessage(
+          locationError,
+          "Unable to get your location.",
+        );
+        setError(message);
+        toast.error(message);
       }
     })();
   };
@@ -1581,7 +1597,12 @@ export default function FindStations() {
       );
     } catch (locationError: unknown) {
       setLocationStatus("blocked");
-      setError(toErrorMessage(locationError, "Unable to get your location."));
+      const message = toErrorMessage(
+        locationError,
+        "Unable to get your location.",
+      );
+      setError(message);
+      toast.error(message);
     } finally {
       setDirectionLoadingStationId(null);
     }

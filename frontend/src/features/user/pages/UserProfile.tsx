@@ -20,6 +20,7 @@ import {
   updateUserProfile,
   type UserProfile,
 } from "@/api/userApi";
+import { toast } from "sonner";
 
 const formatDate = (value: string) => {
   const date = new Date(value);
@@ -116,12 +117,16 @@ export default function UserProfilePage() {
 
   const handleProfileSave = async () => {
     if (!formData.user_name.trim()) {
-      setError("Name is required.");
+      const message = "Name is required.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
     if (!formData.email.trim()) {
-      setError("Email is required.");
+      const message = "Email is required.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -145,9 +150,14 @@ export default function UserProfilePage() {
         vehicle: updated.vehicle ?? "",
       });
       setIsEditing(false);
-      setSaveMessage("Profile updated successfully.");
+      const message = "Profile updated successfully.";
+      setSaveMessage(message);
+      toast.success(message);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Unable to update profile.");
+      const message =
+        err?.response?.data?.detail || "Unable to update profile.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }

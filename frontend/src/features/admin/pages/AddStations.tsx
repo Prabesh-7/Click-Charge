@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { createManagerStation } from "@/api/adminApi";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function CreateManagerStation() {
   const [showPassword, setShowPassword] = useState(false);
@@ -42,10 +43,12 @@ export default function CreateManagerStation() {
     try {
       const res = await createManagerStation(data);
       console.log("Manager & Station created:", res);
-      alert("Manager and Station created successfully!");
+      toast.success("Manager and station created successfully.");
     } catch (error: any) {
+      const message =
+        error.response?.data?.detail || "Creation failed. Please try again.";
       console.error("Creation failed:", error.response?.data || error.message);
-      alert("Creation failed. Please try again.");
+      toast.error("Creation failed", { description: message });
     }
   };
 

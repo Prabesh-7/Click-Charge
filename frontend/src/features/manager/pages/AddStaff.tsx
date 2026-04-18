@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { createStaff } from "@/api/managerApi";
+import { toast } from "sonner";
 
 export default function AddStaff() {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,13 +34,16 @@ export default function AddStaff() {
     try {
       const res = await createStaff(data);
       console.log("Staff created:", res);
-      alert("Staff created successfully!");
+      toast.success("Staff added successfully.");
     } catch (error: any) {
+      const message =
+        error.response?.data?.detail ||
+        "Failed to create staff. Please try again.";
       console.error(
         "Failed to create staff:",
         error.response?.data || error.message,
       );
-      alert("Failed to create staff. Please try again.");
+      toast.error("Failed to create staff", { description: message });
     }
   };
 

@@ -10,14 +10,13 @@
 // import { registerUser } from "@/api/authApi";
 // import { Link } from "react-router-dom";
 
-
 // export default function Register() {
 //   const [showPassword, setShowPassword] = useState(false);
 
 //   const {
 //     register,
 //     handleSubmit,
-    
+
 //     formState: { errors, isSubmitting },
 //   } = useForm<RegisterSchema>({
 //     resolver: zodResolver(registerSchema),
@@ -30,8 +29,6 @@
 //     },
 //   });
 
-
-
 // const onSubmit = async (data: RegisterSchema) => {
 //   try {
 //     const res = await registerUser(data);
@@ -42,8 +39,6 @@
 //     alert("Registration failed");
 //   }
 // };
-
-
 
 //   return (
 //     <main className="container mx-auto mt-20">
@@ -172,8 +167,6 @@
 
 //           </form>
 
-
-
 //           {/* ── Login link ── */}
 //           <div className="text-center text-[14px]">
 //             Already have an account?{" "}
@@ -183,7 +176,7 @@
 //               Sign in
 //             </span>
 //             </Link>
-          
+
 //           </div>
 
 //         </div>
@@ -191,7 +184,6 @@
 //     </main>
 //   );
 // }
-
 
 import { Field, FieldLabel } from "@/components/ui/field";
 import LoginImg from "../../../assets/LoginImg.jpg";
@@ -204,6 +196,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Zap } from "lucide-react";
 import { registerUser } from "@/api/authApi";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -227,10 +220,20 @@ export default function Register() {
     try {
       const res = await registerUser(data);
       console.log("User registered:", res);
-      alert("Registration successful!");
+      toast.success("Registration successful", {
+        description: "You can sign in with your new account.",
+      });
     } catch (error: any) {
-      console.error("Registration failed:", error.response?.data || error.message);
-      alert("Registration failed");
+      const message =
+        error.response?.data?.detail ||
+        "Registration failed. Please try again.";
+      console.error(
+        "Registration failed:",
+        error.response?.data || error.message,
+      );
+      toast.error("Registration failed", {
+        description: message,
+      });
     }
   };
 
@@ -249,14 +252,19 @@ export default function Register() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-white">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-white">
+              Click&Charge
+            </span>
           </div>
           <div>
             <p className="text-2xl font-bold leading-snug text-white">
-              Join the network.<br />Drive further, charge smarter.
+              Join the network.
+              <br />
+              Drive further, charge smarter.
             </p>
             <p className="mt-2 text-sm text-white/70">
-              Create your account and get access to thousands of EV charging stations.
+              Create your account and get access to thousands of EV charging
+              stations.
             </p>
           </div>
         </div>
@@ -265,24 +273,28 @@ export default function Register() {
       {/* Right — form panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-sm">
-
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-gray-900">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-gray-900">
+              Click&Charge
+            </span>
           </div>
 
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Create account</h1>
-            <p className="mt-1.5 text-sm text-gray-500">Fill in your details below to get started.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Create account
+            </h1>
+            <p className="mt-1.5 text-sm text-gray-500">
+              Fill in your details below to get started.
+            </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-
             {/* Username + Email side by side */}
             <div className="grid grid-cols-2 gap-3">
               <Field className="gap-1.5">
@@ -295,7 +307,9 @@ export default function Register() {
                   {...register("user_name")}
                 />
                 {errors.user_name && (
-                  <p className="text-xs text-red-500">{errors.user_name.message}</p>
+                  <p className="text-xs text-red-500">
+                    {errors.user_name.message}
+                  </p>
                 )}
               </Field>
 
@@ -309,7 +323,9 @@ export default function Register() {
                   {...register("phone_number")}
                 />
                 {errors.phone_number && (
-                  <p className="text-xs text-red-500">{errors.phone_number.message}</p>
+                  <p className="text-xs text-red-500">
+                    {errors.phone_number.message}
+                  </p>
                 )}
               </Field>
             </div>
@@ -351,7 +367,9 @@ export default function Register() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-500">{errors.password.message}</p>
+                <p className="text-xs text-red-500">
+                  {errors.password.message}
+                </p>
               )}
             </Field>
 
@@ -383,7 +401,10 @@ export default function Register() {
           {/* Sign in link */}
           <p className="mt-6 text-center text-xs text-gray-500">
             Already have an account?{" "}
-            <Link to="/" className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline underline-offset-2">
+            <Link
+              to="/"
+              className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline underline-offset-2"
+            >
               Sign in
             </Link>
           </p>

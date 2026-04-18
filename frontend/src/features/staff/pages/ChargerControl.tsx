@@ -10,6 +10,7 @@ import {
 } from "@/api/staffApi";
 import { BatteryCharging, Plug, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type Charger = {
   charger_id: number;
@@ -260,7 +261,9 @@ export default function StaffChargerControl() {
         "Failed to start charger:",
         err.response?.data || err.message,
       );
-      alert(err.response?.data?.detail || "Failed to start charger.");
+      toast.error("Failed to start charger.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setActionLoading(false);
     }
@@ -288,9 +291,9 @@ export default function StaffChargerControl() {
           total_amount: invoice.total_amount,
           currency: invoice.currency,
         });
-        alert(
-          `Charging stopped. Invoice ${invoice.invoice_id} | Total: ${invoice.currency || "NPR"} ${invoice.total_amount} for ${invoice.total_energy_kwh ?? 0} kWh`,
-        );
+        toast.success("Charging stopped successfully.", {
+          description: `Invoice ${invoice.invoice_id} | Total: ${invoice.currency || "NPR"} ${invoice.total_amount}`,
+        });
       } else if (typeof response.total_amount === "number") {
         setLastSummary({
           charger_name: selectedCharger?.name,
@@ -314,7 +317,9 @@ export default function StaffChargerControl() {
         "Failed to stop charger:",
         err.response?.data || err.message,
       );
-      alert(err.response?.data?.detail || "Failed to stop charger.");
+      toast.error("Failed to stop charger.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setActionLoading(false);
     }
@@ -336,13 +341,15 @@ export default function StaffChargerControl() {
       );
       void fetchMeterValues(selectedId);
       void fetchReservations();
-      alert(response.message || "Connector reserved successfully.");
+      toast.success(response.message || "Connector reserved successfully.");
     } catch (err: any) {
       console.error(
         "Failed to reserve connector:",
         err.response?.data || err.message,
       );
-      alert(err.response?.data?.detail || "Failed to reserve connector.");
+      toast.error("Failed to reserve connector.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setActionLoading(false);
     }
@@ -364,13 +371,15 @@ export default function StaffChargerControl() {
       );
       void fetchMeterValues(selectedId);
       void fetchReservations();
-      alert(response.message || "Connector released successfully.");
+      toast.success(response.message || "Connector released successfully.");
     } catch (err: any) {
       console.error(
         "Failed to release connector:",
         err.response?.data || err.message,
       );
-      alert(err.response?.data?.detail || "Failed to release connector.");
+      toast.error("Failed to release connector.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setActionLoading(false);
     }
@@ -398,7 +407,9 @@ export default function StaffChargerControl() {
         "Failed to release reservation:",
         err.response?.data || err.message,
       );
-      alert(err.response?.data?.detail || "Failed to release reservation.");
+      toast.error("Failed to release reservation.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setActionLoading(false);
     }

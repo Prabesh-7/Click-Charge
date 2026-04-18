@@ -8,6 +8,7 @@ import {
   Shield,
   Wallet,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { getWalletSummary } from "@/api/walletApi";
 
@@ -38,7 +39,9 @@ export default function WalletDashboard() {
   const handleTopup = () => {
     const parsed = Number(amount);
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      setError("Please enter a valid amount.");
+      const message = "Please enter a valid amount.";
+      setError(message);
+      toast.error(message);
       return;
     }
     navigate("/user/wallet/add-funds/esewa", { state: { total: parsed } });

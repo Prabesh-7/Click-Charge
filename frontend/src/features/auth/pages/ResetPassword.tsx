@@ -130,7 +130,6 @@
 //   );
 // }
 
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -146,6 +145,7 @@ import {
   type ResetPasswordSchema,
 } from "@/lib/schema/auth.schema";
 import { ArrowLeft, Eye, EyeOff, KeyRound, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -169,7 +169,9 @@ export default function ResetPasswordPage() {
     try {
       setError(null);
       if (!resetToken) {
-        setError("Reset session is missing or expired.");
+        const message = "Reset session is missing or expired.";
+        setError(message);
+        toast.error(message);
         return;
       }
       const { confirm_password, ...requestPayload } = data;
@@ -178,9 +180,14 @@ export default function ResetPasswordPage() {
         new_password: requestPayload.new_password,
       });
       setMessage(response.message);
-      setTimeout(() => { navigate("/"); }, 1200);
+      toast.success(response.message);
+      setTimeout(() => {
+        navigate("/");
+      }, 1200);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to reset password.");
+      const message = err.response?.data?.detail || "Failed to reset password.";
+      setError(message);
+      toast.error(message);
     }
   };
 
@@ -199,11 +206,15 @@ export default function ResetPasswordPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-white">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-white">
+              Click&Charge
+            </span>
           </div>
           <div>
             <p className="text-2xl font-bold leading-snug text-white">
-              Almost there.<br />Set a strong new password.
+              Almost there.
+              <br />
+              Set a strong new password.
             </p>
             <p className="mt-2 text-sm text-white/70">
               Your new password must be at least 8 characters long.
@@ -215,13 +226,14 @@ export default function ResetPasswordPage() {
       {/* Right — form panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-sm">
-
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-gray-900">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-gray-900">
+              Click&Charge
+            </span>
           </div>
 
           {/* Icon */}
@@ -231,7 +243,9 @@ export default function ResetPasswordPage() {
 
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Set new password</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Set new password
+            </h1>
             <p className="mt-1.5 text-sm text-gray-500">
               Choose a strong password for your account.
             </p>
@@ -282,7 +296,9 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
               {errors.new_password && (
-                <p className="text-xs text-red-500">{errors.new_password.message}</p>
+                <p className="text-xs text-red-500">
+                  {errors.new_password.message}
+                </p>
               )}
             </Field>
 
@@ -307,7 +323,9 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
               {errors.confirm_password && (
-                <p className="text-xs text-red-500">{errors.confirm_password.message}</p>
+                <p className="text-xs text-red-500">
+                  {errors.confirm_password.message}
+                </p>
               )}
             </Field>
 

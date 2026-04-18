@@ -4,6 +4,7 @@ import {
   updateChargerPricing,
   type ManagerCharger,
 } from "@/api/managerApi";
+import { toast } from "sonner";
 
 export default function Pricing() {
   const [chargers, setChargers] = useState<ManagerCharger[]>([]);
@@ -50,7 +51,9 @@ export default function Pricing() {
     const parsed = Number(raw);
 
     if (!Number.isFinite(parsed) || parsed < 0) {
-      setError("Price must be a valid non-negative number.");
+      const message = "Price must be a valid non-negative number.";
+      setError(message);
+      toast.error(message);
       return;
     }
 
@@ -71,9 +74,13 @@ export default function Pricing() {
         [chargerId]: String(Number(updated.price_per_kwh ?? 0)),
       }));
 
-      setSuccess("Pricing updated successfully.");
+      const message = "Pricing updated successfully.";
+      setSuccess(message);
+      toast.success(message);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to update pricing.");
+      const message = err.response?.data?.detail || "Failed to update pricing.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSavingId(null);
     }

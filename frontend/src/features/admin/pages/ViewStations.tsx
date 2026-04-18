@@ -11,6 +11,7 @@ import {
 } from "@/lib/schema/StationUpdateSchema";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface Station {
   station_id: number;
@@ -87,7 +88,7 @@ export default function ViewStations() {
     try {
       setIsSubmitting(true);
       await updateStation(editingStation.station_id, data);
-      alert("Station updated successfully!");
+      toast.success("Station updated successfully.");
       handleCloseModal();
       await fetchStations();
     } catch (error: any) {
@@ -97,9 +98,9 @@ export default function ViewStations() {
       );
       const detail = error.response?.data?.detail;
       if (typeof detail === "string") {
-        alert(detail);
+        toast.error("Update failed", { description: detail });
       } else {
-        alert("Failed to update station. Please try again.");
+        toast.error("Failed to update station. Please try again.");
       }
     } finally {
       setIsSubmitting(false);
@@ -113,7 +114,7 @@ export default function ViewStations() {
 
     try {
       await deleteStation(stationId);
-      alert("Station deleted successfully!");
+      toast.success("Station deleted successfully.");
       await fetchStations();
     } catch (error: any) {
       console.error(
@@ -122,9 +123,9 @@ export default function ViewStations() {
       );
       const detail = error.response?.data?.detail;
       if (typeof detail === "string") {
-        alert(detail);
+        toast.error("Delete failed", { description: detail });
       } else {
-        alert("Failed to delete station. Please try again.");
+        toast.error("Failed to delete station. Please try again.");
       }
     }
   };

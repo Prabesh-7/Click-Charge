@@ -5,6 +5,7 @@ import {
   getMyChargers,
   stopCharging,
 } from "@/api/managerApi";
+import { toast } from "sonner";
 
 type MeterValues = {
   connector_number?: number | null;
@@ -196,20 +197,15 @@ export default function LiveSession() {
       if (response?.invoice) {
         const invoice = response.invoice as ChargingInvoice;
         setLatestInvoice(invoice);
-        alert(
-          [
-            `Invoice: ${invoice.invoice_id}`,
-            `Charger: ${invoice.charger_name} (ID ${invoice.charger_id})`,
-            `Connector: ${invoice.connector_number} (${invoice.charge_point_id})`,
-            `Energy: ${invoice.total_energy_kwh} kWh`,
-            `Rate: ${invoice.currency} ${invoice.price_per_kwh}/kWh`,
-            `Total: ${invoice.currency} ${invoice.total_amount}`,
-          ].join("\n"),
-        );
+        toast.success("Charging stopped successfully.", {
+          description: `Invoice ${invoice.invoice_id} | Total ${invoice.currency} ${invoice.total_amount}`,
+        });
       }
       await fetchChargers();
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Failed to stop charging.");
+      toast.error("Failed to stop charging.", {
+        description: err.response?.data?.detail,
+      });
     } finally {
       setStopLoadingKey(null);
     }

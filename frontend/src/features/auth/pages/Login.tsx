@@ -184,6 +184,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import type { CredentialResponse } from "@react-oauth/google";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser, loginWithGoogle } from "@/api/authApi";
+import { toast } from "sonner";
 
 type UserRole = "ADMIN" | "MANAGER" | "STAFF" | "USER";
 
@@ -206,6 +207,7 @@ function normalizeUserRole(role: unknown): UserRole {
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const {
     register,
@@ -220,40 +222,57 @@ export default function Login() {
     access_token: string;
     user?: { role?: unknown };
   }) => {
+    setAuthError(null);
     localStorage.setItem("access_token", res.access_token);
     localStorage.setItem("user", JSON.stringify(res.user));
     const role = normalizeUserRole(res.user?.role);
+    toast.success("Login successful", {
+      description: "Redirecting to your dashboard.",
+    });
     navigate(roleRedirectMap[role]);
-    alert("login successful!");
   };
 
   const onSubmit = async (data: LoginSchema) => {
     try {
+      setAuthError(null);
       const res = await loginUser(data);
       console.log("logged in successfully:", res);
       console.log("Form Data:", data);
       handleAuthSuccess(res);
     } catch (error: any) {
+      const message =
+        error.response?.data?.detail ||
+        "Invalid email or password. Please try again.";
       console.error("login failed:", error.response?.data || error.message);
-      alert("login failed");
+      setAuthError(message);
+      toast.error("Login failed", {
+        description: message,
+      });
     }
   };
 
   const onGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
-      alert("Google login failed");
+      const message = "Google login failed";
+      setAuthError(message);
+      toast.error(message);
       return;
     }
 
     try {
+      setAuthError(null);
       const res = await loginWithGoogle(credentialResponse.credential);
       handleAuthSuccess(res);
     } catch (error: any) {
+      const message = error.response?.data?.detail || "Google login failed";
       console.error(
         "google login failed:",
         error.response?.data || error.message,
       );
-      alert("google login failed");
+      setAuthError(message);
+      toast.error("Google login failed", {
+        description: message,
+      });
     }
   };
 
@@ -316,6 +335,11 @@ export default function Login() {
           </div>
 
           {/* Form */}
+          {authError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {authError}
+            </div>
+          )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Field className="gap-1.5">
               <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
@@ -383,10 +407,14 @@ export default function Login() {
           </div>
 
           {/* Google */}
-          <div >
+          <div>
             <GoogleLogin
               onSuccess={onGoogleSuccess}
-              onError={() => alert("google login failed")}
+              onError={() => {
+                const message = "Google login failed";
+                setAuthError(message);
+                toast.error(message);
+              }}
               text="signin_with"
               shape="rectangular"
               logo_alignment="center"

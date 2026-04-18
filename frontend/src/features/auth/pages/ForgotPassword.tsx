@@ -94,7 +94,6 @@
 //   );
 // }
 
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,6 +109,7 @@ import {
   type ForgotPasswordSchema,
 } from "@/lib/schema/auth.schema";
 import { ArrowLeft, Mail, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -130,11 +130,15 @@ export default function ForgotPassword() {
       setError(null);
       const response = await forgotPassword(data);
       setMessage(response.message);
+      toast.success(response.message);
       navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`, {
         state: { notice: response.message },
       });
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to send reset email.");
+      const message =
+        err.response?.data?.detail || "Failed to send reset email.";
+      setError(message);
+      toast.error(message);
     }
   };
 
@@ -153,11 +157,15 @@ export default function ForgotPassword() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-white">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-white">
+              Click&Charge
+            </span>
           </div>
           <div>
             <p className="text-2xl font-bold leading-snug text-white">
-              No worries,<br />we've got you covered.
+              No worries,
+              <br />
+              we've got you covered.
             </p>
             <p className="mt-2 text-sm text-white/70">
               We'll send a one-time code to your registered email address.
@@ -169,13 +177,14 @@ export default function ForgotPassword() {
       {/* Right — form panel */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-sm">
-
           {/* Mobile logo */}
           <div className="mb-8 flex items-center gap-2 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
               <Zap size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-sm font-bold tracking-tight text-gray-900">Click&Charge</span>
+            <span className="text-sm font-bold tracking-tight text-gray-900">
+              Click&Charge
+            </span>
           </div>
 
           {/* Icon */}
@@ -185,9 +194,12 @@ export default function ForgotPassword() {
 
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Forgot password?</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Forgot password?
+            </h1>
             <p className="mt-1.5 text-sm text-gray-500">
-              Enter your registered email and we'll send you an OTP code to reset your password.
+              Enter your registered email and we'll send you an OTP code to
+              reset your password.
             </p>
           </div>
 

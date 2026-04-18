@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function MyStaff() {
   const [staffMembers, setStaffMembers] = useState<ManagerStaff[]>([]);
@@ -112,7 +113,7 @@ export default function MyStaff() {
     try {
       setIsSubmitting(true);
       await updateStaff(editingStaff.user_id, data);
-      alert("Staff member updated successfully!");
+      toast.success("Staff updated successfully.");
       handleCloseModal();
       await fetchStaff();
     } catch (error: any) {
@@ -120,7 +121,7 @@ export default function MyStaff() {
         "Failed to update staff:",
         error.response?.data || error.message,
       );
-      alert("Failed to update staff member. Please try again.");
+      toast.error("Failed to update staff member. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -129,7 +130,7 @@ export default function MyStaff() {
   const onSubmitAdd = async (data: CreateStaffSchema) => {
     try {
       await createStaff(data);
-      alert("Staff member added successfully!");
+      toast.success("Staff added successfully.");
       handleCloseAddModal();
       await fetchStaff();
     } catch (error: any) {
@@ -137,7 +138,7 @@ export default function MyStaff() {
         "Failed to add staff:",
         error.response?.data || error.message,
       );
-      alert("Failed to add staff member. Please try again.");
+      toast.error("Failed to add staff member. Please try again.");
     }
   };
 
@@ -148,14 +149,14 @@ export default function MyStaff() {
 
     try {
       await deleteStaff(userId);
-      alert("Staff member deleted successfully!");
+      toast.success("Staff deleted successfully.");
       await fetchStaff();
     } catch (error: any) {
       console.error(
         "Failed to delete staff:",
         error.response?.data || error.message,
       );
-      alert("Failed to delete staff member. Please try again.");
+      toast.error("Failed to delete staff member. Please try again.");
     }
   };
 

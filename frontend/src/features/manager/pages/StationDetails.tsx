@@ -480,7 +480,6 @@
 //   );
 // }
 
-
 import { useEffect, useState, type ChangeEvent } from "react";
 import {
   getMyChargers,
@@ -514,6 +513,7 @@ import {
   Zap,
   Signal,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type StationFormState = {
   station_description: string;
@@ -625,16 +625,19 @@ export default function StationDetails() {
         ...prev,
         station_images: [...prev.station_images, uploaded.image_url],
       }));
-      setSuccessMessage("Image uploaded successfully.");
+      const message = "Image uploaded successfully.";
+      setSuccessMessage(message);
+      toast.success(message);
     } catch (err: any) {
       console.error(
         "Failed to upload station image:",
         err.response?.data || err.message,
       );
-      setError(
+      const message =
         err.response?.data?.detail ||
-          "Failed to upload image. Please try again.",
-      );
+        "Failed to upload image. Please try again.";
+      setError(message);
+      toast.error(message);
     } finally {
       setUploading(false);
       event.target.value = "";
@@ -668,16 +671,19 @@ export default function StationDetails() {
 
       setStation(updated);
       hydrateForm(updated);
-      setSuccessMessage("Station details updated successfully.");
+      const message = "Station details updated successfully.";
+      setSuccessMessage(message);
+      toast.success(message);
     } catch (err: any) {
       console.error(
         "Failed to update station details:",
         err.response?.data || err.message,
       );
-      setError(
+      const message =
         err.response?.data?.detail ||
-          "Failed to update station details. Please try again.",
-      );
+        "Failed to update station details. Please try again.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -711,11 +717,13 @@ export default function StationDetails() {
             <div className="flex items-center gap-2">
               <div className="hidden items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 sm:inline-flex">
                 <Signal size={13} className="text-gray-400" />
-                {station.total_charger} charger{station.total_charger === 1 ? "" : "s"}
+                {station.total_charger} charger
+                {station.total_charger === 1 ? "" : "s"}
               </div>
               <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700">
                 <Hash size={13} className="text-gray-400" />
-                <span className="hidden sm:inline">Station</span> #{station.station_id}
+                <span className="hidden sm:inline">Station</span> #
+                {station.station_id}
               </div>
             </div>
           )}
@@ -788,7 +796,8 @@ export default function StationDetails() {
               <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
                 <Signal size={14} className="text-gray-400" />
                 <span className="text-xs font-semibold text-gray-700">
-                  {station.total_charger} charger{station.total_charger === 1 ? "" : "s"}
+                  {station.total_charger} charger
+                  {station.total_charger === 1 ? "" : "s"}
                 </span>
               </div>
               <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
@@ -850,7 +859,9 @@ export default function StationDetails() {
                       </div>
                       <p className="text-sm font-semibold text-gray-900">
                         {station.phone_number || (
-                          <span className="font-normal text-gray-400">Not set</span>
+                          <span className="font-normal text-gray-400">
+                            Not set
+                          </span>
                         )}
                       </p>
                     </div>
@@ -877,7 +888,8 @@ export default function StationDetails() {
                         Coordinates
                       </div>
                       <p className="text-sm font-semibold tabular-nums text-gray-900">
-                        {station.latitude.toFixed(4)}, {station.longitude.toFixed(4)}
+                        {station.latitude.toFixed(4)},{" "}
+                        {station.longitude.toFixed(4)}
                       </p>
                     </div>
                   </div>
@@ -890,7 +902,9 @@ export default function StationDetails() {
                     </div>
                     <p className="text-sm leading-relaxed text-gray-700">
                       {station.station_description || (
-                        <span className="text-gray-400">No description added.</span>
+                        <span className="text-gray-400">
+                          No description added.
+                        </span>
                       )}
                     </p>
                   </div>
@@ -902,7 +916,9 @@ export default function StationDetails() {
                     </p>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
                       {AMENITY_META.map(({ key, label, icon: Icon }) => {
-                        const enabled = Boolean(station[key as keyof ManagerStation]);
+                        const enabled = Boolean(
+                          station[key as keyof ManagerStation],
+                        );
                         return (
                           <div
                             key={key}

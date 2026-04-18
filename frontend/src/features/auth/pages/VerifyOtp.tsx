@@ -22,6 +22,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { ArrowLeft, KeyRound, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
@@ -48,11 +49,14 @@ export default function VerifyOtpPage() {
     try {
       setError(null);
       const response = await verifyResetOtp(data);
+      toast.success("OTP verified successfully.");
       navigate(
         `/reset-password?token=${encodeURIComponent(response.reset_token)}`,
       );
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Invalid OTP code.");
+      const message = err.response?.data?.detail || "Invalid OTP code.";
+      setError(message);
+      toast.error(message);
     }
   };
 

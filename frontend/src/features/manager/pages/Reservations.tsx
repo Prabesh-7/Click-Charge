@@ -163,10 +163,15 @@ export default function Reservations() {
       setError(null);
       setSuccess(null);
       await releaseManagerSlotReservation(slotId);
-      setSuccess("Reservation released successfully.");
+      const message = "Reservation released successfully.";
+      setSuccess(message);
+      toast.success(message);
       await fetchSlots();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to release reservation.");
+      const message =
+        err.response?.data?.detail || "Failed to release reservation.";
+      setError(message);
+      toast.error("Release failed.", { description: message });
     } finally {
       setActionLoadingKey(null);
     }
@@ -178,12 +183,15 @@ export default function Reservations() {
       setError(null);
       setSuccess(null);
       await sendManagerSlotConfirmation(slotId);
-      setSuccess("Confirmation email sent successfully.");
+      const message = "Confirmation email sent successfully.";
+      setSuccess(message);
+      toast.success(message);
       await fetchSlots();
     } catch (err: any) {
-      setError(
-        err.response?.data?.detail || "Failed to send confirmation email.",
-      );
+      const message =
+        err.response?.data?.detail || "Failed to send confirmation email.";
+      setError(message);
+      toast.error("Confirmation failed.", { description: message });
     } finally {
       setActionLoadingKey(null);
     }

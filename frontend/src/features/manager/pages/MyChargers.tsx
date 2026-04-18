@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { z } from "zod";
+import { toast } from "sonner";
 
 type CreateChargerFormValues = z.input<typeof createChargerSchema>;
 type CreateChargerSubmitValues = z.output<typeof createChargerSchema>;
@@ -147,7 +148,7 @@ export default function MyChargers() {
     try {
       setIsSubmitting(true);
       await updateCharger(editingCharger.charger_id, data);
-      alert("Charger updated successfully!");
+      toast.success("Charger updated successfully.");
       handleCloseModal();
       await fetchChargers();
     } catch (error: any) {
@@ -157,11 +158,11 @@ export default function MyChargers() {
       );
       const detail = error.response?.data?.detail;
       if (typeof detail === "string") {
-        alert(detail);
+        toast.error("Failed to update charger", { description: detail });
       } else if (Array.isArray(detail) && detail[0]?.msg) {
-        alert(detail[0].msg);
+        toast.error("Failed to update charger", { description: detail[0].msg });
       } else {
-        alert("Failed to update charger. Please try again.");
+        toast.error("Failed to update charger. Please try again.");
       }
     } finally {
       setIsSubmitting(false);
@@ -175,7 +176,7 @@ export default function MyChargers() {
 
     try {
       await deleteCharger(chargerId);
-      alert("Charger deleted successfully!");
+      toast.success("Charger deleted successfully.");
       await fetchChargers();
     } catch (error: any) {
       console.error(
@@ -184,9 +185,9 @@ export default function MyChargers() {
       );
       const detail = error.response?.data?.detail;
       if (typeof detail === "string") {
-        alert(detail);
+        toast.error("Failed to delete charger", { description: detail });
       } else {
-        alert("Failed to delete charger. Please try again.");
+        toast.error("Failed to delete charger. Please try again.");
       }
     }
   };
@@ -204,7 +205,7 @@ export default function MyChargers() {
   const onSubmitAdd = async (data: CreateChargerSubmitValues) => {
     try {
       await addCharger(data);
-      alert("Charger added successfully!");
+      toast.success("Charger added successfully.");
       handleCloseAddModal();
       await fetchChargers();
     } catch (error: any) {
@@ -214,11 +215,11 @@ export default function MyChargers() {
       );
       const detail = error.response?.data?.detail;
       if (typeof detail === "string") {
-        alert(detail);
+        toast.error("Failed to add charger", { description: detail });
       } else if (Array.isArray(detail) && detail[0]?.msg) {
-        alert(detail[0].msg);
+        toast.error("Failed to add charger", { description: detail[0].msg });
       } else {
-        alert("Failed to add charger. Please try again.");
+        toast.error("Failed to add charger. Please try again.");
       }
     }
   };
