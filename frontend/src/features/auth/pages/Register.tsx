@@ -250,7 +250,7 @@ export default function Register() {
         <div className="absolute inset-0 flex flex-col justify-between p-10">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-              <Zap size={16} className="text-white" strokeWidth={2.5} />
+              <Zap size={28} className="text-white" strokeWidth={2.5} />
             </div>
             <span className="text-sm font-bold tracking-tight text-white">
               Click&Charge
@@ -298,7 +298,7 @@ export default function Register() {
             {/* Username + Email side by side */}
             <div className="grid grid-cols-2 gap-3">
               <Field className="gap-1.5">
-                <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                   Username
                 </FieldLabel>
                 <Input
@@ -314,7 +314,7 @@ export default function Register() {
               </Field>
 
               <Field className="gap-1.5">
-                <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                   Phone
                 </FieldLabel>
                 <Input
@@ -332,8 +332,8 @@ export default function Register() {
 
             {/* Email */}
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
-                Email address
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
+                Email Address
               </FieldLabel>
               <Input
                 className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
@@ -347,7 +347,7 @@ export default function Register() {
 
             {/* Password */}
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                 Password
               </FieldLabel>
               <div className="relative">
@@ -375,7 +375,7 @@ export default function Register() {
 
             {/* Vehicle */}
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                 Vehicle
               </FieldLabel>
               <Input

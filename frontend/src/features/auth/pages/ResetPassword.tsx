@@ -236,10 +236,7 @@ export default function ResetPasswordPage() {
             </span>
           </div>
 
-          {/* Icon */}
-          <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm">
-            <KeyRound size={20} className="text-emerald-600" />
-          </div>
+     
 
           {/* Heading */}
           <div className="mb-6">
@@ -276,7 +273,7 @@ export default function ResetPasswordPage() {
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                 New password
               </FieldLabel>
               <div className="relative">
@@ -303,7 +300,7 @@ export default function ResetPasswordPage() {
             </Field>
 
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                 Confirm password
               </FieldLabel>
               <div className="relative">
@@ -338,16 +335,7 @@ export default function ResetPasswordPage() {
             </Button>
           </form>
 
-          {/* Back to login */}
-          <div className="mt-6 text-center">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition hover:text-emerald-600"
-            >
-              <ArrowLeft size={13} />
-              Back to login
-            </Link>
-          </div>
+       
         </div>
       </div>
     </main>

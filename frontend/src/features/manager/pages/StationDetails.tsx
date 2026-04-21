@@ -785,36 +785,7 @@ export default function StationDetails() {
 
         {!loading && !error && station && (
           <div className="space-y-5">
-            {/* ── Stat chips row ── */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                <Hash size={14} className="text-gray-400" />
-                <span className="text-xs font-semibold text-gray-700">
-                  ID #{station.station_id}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                <Signal size={14} className="text-gray-400" />
-                <span className="text-xs font-semibold text-gray-700">
-                  {station.total_charger} charger
-                  {station.total_charger === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                <CalendarDays size={14} className="text-gray-400" />
-                <span className="text-xs font-semibold text-gray-700">
-                  Since {new Date(station.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              {station.manager_id && (
-                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                  <UserCircle size={14} className="text-gray-400" />
-                  <span className="text-xs font-semibold text-gray-700">
-                    Manager #{station.manager_id}
-                  </span>
-                </div>
-              )}
-            </div>
+            
 
             {/* ── Station overview card ── */}
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

@@ -326,10 +326,10 @@ export default function Login() {
 
           {/* Heading */}
           <div className="mb-7">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-3xl font-bold tracking-tight text-[#1A1A1A]">
               Sign in
             </h1>
-            <p className="mt-1.5 text-sm text-gray-500">
+            <p className="mt-1.5 text-sm text-[#1A1A1A]">
               Welcome back! Enter your details to continue.
             </p>
           </div>
@@ -342,8 +342,8 @@ export default function Login() {
           )}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
-                Email address
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
+                Email Address
               </FieldLabel>
               <Input
                 className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
@@ -357,7 +357,7 @@ export default function Login() {
 
             <Field className="gap-1.5">
               <div className="flex items-center justify-between">
-                <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+                <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                   Password
                 </FieldLabel>
                 <Link

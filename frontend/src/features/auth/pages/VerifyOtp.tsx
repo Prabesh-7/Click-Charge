@@ -94,17 +94,12 @@ export default function VerifyOtpPage() {
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
-              <Zap size={16} className="text-white" strokeWidth={2.5} />
-            </div>
             <span className="text-sm font-bold tracking-tight text-gray-900">
               Click&Charge
             </span>
           </div>
 
-          <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm">
-            <KeyRound size={20} className="text-emerald-600" />
-          </div>
+       
 
           <div className="mb-6">
             <h1 className="text-2xl font-bold tracking-tight text-gray-900">
@@ -115,12 +110,6 @@ export default function VerifyOtpPage() {
             </p>
           </div>
 
-          {notice && (
-            <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-700">
-              <span className="shrink-0">✓</span>
-              {notice}
-            </div>
-          )}
 
           {error && (
             <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
@@ -133,7 +122,7 @@ export default function VerifyOtpPage() {
             <input type="hidden" {...register("email")} />
 
             <Field className="gap-1.5">
-              <FieldLabel className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+              <FieldLabel className="text-xs font-semibold   text-[#1A1A1A]">
                 OTP code
               </FieldLabel>
               <div>
@@ -179,15 +168,7 @@ export default function VerifyOtpPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <Link
-              to="/forgot-password"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 transition hover:text-emerald-600"
-            >
-              <ArrowLeft size={13} />
-              Back
-            </Link>
-          </div>
+     
         </div>
       </div>
     </main>
